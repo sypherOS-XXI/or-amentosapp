@@ -1,0 +1,4175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#FFF3D0">
+  <meta name="description" content="Sistema de orçamentos para serviços de elétrica, segurança eletrônica e energia solar.">
+  <title>Sistema de Orçamentos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              cream: '#FFF8E1',
+              lightCream: '#FFFDF7',
+              amberSoft: '#FFECB3',
+              amberTab: '#FFE082',
+              amber: '#FFB300',
+              orange: '#F57C00',
+              deepOrange: '#D84315',
+              darkOrange: '#E65100',
+              whatsapp: '#25D366',
+              whatsappHover: '#1EBE5D'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Compatibilidade com WebView/APK: navegação usa Font Awesome em vez de emoji,
+       pois alguns WebViews Android exibem emoji como "???" quando a fonte do sistema
+       não está disponível. */
+    .nav-tab i { flex: 0 0 auto; }
+
+    /* ===================================================================
+       BASE
+       =================================================================== */
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: #FFF8E1;
+      color: #1f2937;
+      font-family: 'Inter', sans-serif;
+      max-width: 100%;
+      /* impede scroll horizontal da página inteira (tabelas, modais, etc.) */
+      overflow-x: clip;
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    /* Imagens e SVG nunca devem rebentar o layout */
+    img, svg, video, canvas { max-width: 100%; height: auto; }
+
+    /* ===================================================================
+       ROLAGENS
+       =================================================================== */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #FFF8E1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #FFB300;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #F57C00;
+    }
+
+    .sem-scroll {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .sem-scroll::-webkit-scrollbar { display: none; }
+
+    /* CONTENTORES DE TABELA: evita "bounce" da página ao arrastar o dedo */
+    .area-tabela {
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .nav-abas {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x proximity;
+    }
+    .nav-abas > button { scroll-snap-align: center; }
+
+    /* ===================================================================
+       TOUCH / ACESSIBILIDADE
+       =================================================================== */
+    a, button, label, select, summary, [role="button"] {
+      -webkit-tap-highlight-color: rgba(216, 67, 21, 0.18);
+    }
+
+    /* Alvos de toque maiores em dispositivos sem rato */
+    @media (hover: none) and (pointer: coarse) {
+      .btn-icone { min-width: 2.5rem; min-height: 2.5rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    .tab-active {
+      background-color: #FFB300 !important;
+      color: #000000 !important;
+      border-color: #D84315 !important;
+      font-weight: 700;
+    }
+
+    /* ===================================================================
+       RESPONSIVO  (apenas ecrã — a impressão nunca é afectada)
+       =================================================================== */
+    .nav-abas-envolve { position: relative; }
+
+    /* --- Barra de abas: sinal de que existem mais abas para o lado --- */
+    .sinal-abas {
+      position: absolute;
+      top: 0;
+      bottom: 0.35rem;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      z-index: 2;
+      pointer-events: none;
+      color: #D84315;
+      font-size: 0.8rem;
+    }
+    .sinal-abas-dir { right: 0; background: linear-gradient(to left, #FFF3D0 45%, rgba(255, 243, 208, 0)); }
+    .sinal-abas-esq { left: 0;  background: linear-gradient(to right, #FFF3D0 45%, rgba(255, 243, 208, 0)); }
+
+    /* aparece so quando a barra esta mesmo a ser rolavel */
+    .nav-abas-envolve.pode-rolar:not(.no-fim) .sinal-abas-dir,
+    .nav-abas-envolve.pode-rolar:not(.no-inicio) .sinal-abas-esq { display: flex; }
+
+    @keyframes setaPulsoDir { 0%, 100% { opacity: 0.30; transform: translateX(-2px); } 50% { opacity: 1; transform: translateX(2px); } }
+    @keyframes setaPulsoEsq { 0%, 100% { opacity: 0.30; transform: translateX(2px); } 50% { opacity: 1; transform: translateX(-2px); } }
+    .nav-abas-envolve.pode-rolar:not(.no-fim) .sinal-abas-dir i { animation: setaPulsoDir 1.5s ease-in-out infinite; }
+    .nav-abas-envolve.pode-rolar:not(.no-inicio) .sinal-abas-esq i { animation: setaPulsoEsq 1.5s ease-in-out infinite; }
+
+    /* barra de progresso: mostra em que ponto da lista de abas estamos.
+       Tem de ter exactamente a mesma caixa que a barra de abas (max-w-7xl
+       centrada), caso contrario a percentagem seria calculada pela largura errada. */
+    .progresso-abas {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 80rem;
+      bottom: 0;
+      height: 3px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .progresso-abas > i {
+      display: block;
+      height: 100%;
+      width: 100%;
+      background: #D84315;
+      border-radius: 0 3px 3px 0;
+      transition: width 0.15s linear, left 0.15s linear;
+    }
+    .nav-abas-envolve.pode-rolar .progresso-abas { opacity: 1; }
+
+    /* --- Telas pequenas: tabelas passam a lista de cartões --- */
+    @media screen and (max-width: 767px) {
+      /* o iOS faz zoom automático ao focar um campo com menos de 16px */
+      input, select, textarea { font-size: 16px !important; }
+
+      .tabela-resp {
+        display: block;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      .tabela-resp thead { display: none; }
+      .tabela-resp tbody { display: block; }
+
+      .tabela-resp tr {
+        display: block;
+        padding: 0.7rem 0.85rem;
+        background: #fff;
+        border-bottom: 1px solid #e7e5e4;
+      }
+      /* neutraliza o divide-y do Tailwind (senão duplica as linhas) */
+      .tabela-resp tbody > tr + tr { border-top: 0 !important; }
+      .tabela-resp tbody > tr:last-child { border-bottom: 0; }
+      .tabela-resp tbody > tr:hover { background: #fff; }
+
+      .tabela-resp td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        width: auto;
+        min-height: 2rem;
+        padding: 0.2rem 0;
+        text-align: right;
+      }
+      .tabela-resp td::before {
+        content: attr(data-label);
+        flex: 0 0 auto;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #a8a29e;
+        text-align: left;
+      }
+      .tabela-resp td:empty { display: none; }
+
+      /* coluna de identificação (nome / descrição): full width, sem rótulo */
+      .tabela-resp td.td-titulo {
+        display: block;
+        text-align: left;
+        font-size: 0.9375rem;
+        line-height: 1.35;
+        padding: 0 0 0.4rem;
+        margin-bottom: 0.4rem;
+        border-bottom: 1px dashed #e7e5e4;
+      }
+      .tabela-resp td.td-titulo::before { content: none; }
+
+      /* coluna de botões: sem rótulo, botões grandes */
+      .tabela-resp td.td-acoes { padding-top: 0.65rem; }
+      .tabela-resp td.td-acoes::before { content: none; }
+      .tabela-resp td.td-acoes > div { justify-content: flex-end; width: 100%; }
+      .tabela-resp td.td-acoes button { min-width: 2.75rem; min-height: 2.75rem; }
+
+      /* a coluna das mídias é um botão, não uma ação: sem o rótulo ficava
+         um clipe solto no cartão, sem indicar o que era */
+      .tabela-resp td.td-midias::before { content: attr(data-label); }
+
+      /* colunas inutilizáveis em telemóvel (IDs) */
+      .tabela-resp .col-oculta { display: none !important; }
+
+      /* scroll aninhado é mau em ecrã táctil: deixa a página rolar */
+      .area-tabela { max-height: none !important; overflow: visible !important; }
+    }
+
+    /* --- Ecrãs muito estreitos (320px) --- */
+    @media screen and (max-width: 359px) {
+      .nav-abas > button { padding-left: 0.6rem; padding-right: 0.6rem; }
+      .tabela-resp tr { padding: 0.6rem 0.6rem; }
+    }
+
+    /* O PDF é escrito diretamente em bytes pela aplicação (ver
+       construirPdfOrcamento), por isso já não existe qualquer stylesheet de
+       impressão nem área #print-area: o documento é gerado fora do DOM. */
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-brand-amber selection:text-black">
+
+  <header class="bg-[#FFF3D0] border-b border-[#FFB300] shadow-sm sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex flex-wrap justify-between items-center gap-2 sm:gap-3">
+      <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 sm:flex-none">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 shrink-0 rounded-xl bg-brand-deepOrange flex items-center justify-center text-white shadow-md">
+          <i class="fa-solid fa-bolt text-lg sm:text-xl"></i>
+        </div>
+        <div class="min-w-0">
+          <h1 class="text-base sm:text-xl font-bold text-brand-darkOrange leading-tight break-words line-clamp-2 sm:line-clamp-1" id="header-empresa-nome"></h1>
+          <p class="text-[11px] sm:text-xs text-stone-600 font-medium flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span id="header-empresa-tel" class="whitespace-nowrap"></span>
+            <span id="header-empresa-separador" class="hidden sm:inline">•</span>
+            <span id="header-empresa-email" class="truncate max-w-[100%]"></span>
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <span id="medidor-armazenamento" class="px-2 py-1 rounded text-[10px] font-mono border bg-stone-100 text-stone-600 border-stone-300 whitespace-nowrap" title="Espaço ocupado no armazenamento local do navegador">a medir...</span>
+        <button onclick="salvarEstadoGeral()" title="Guardar agora e mostrar o espaço ocupado" class="px-2.5 sm:px-3 py-2 sm:py-1.5 min-h-[2rem] bg-brand-amberSoft hover:bg-brand-amber text-[11px] sm:text-xs font-semibold rounded-lg border border-brand-amber text-stone-800 transition shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+          <i class="fa-solid fa-floppy-disk text-brand-deepOrange"></i><span class="hidden sm:inline">Auto-</span>Salvo
+        </button>
+      </div>
+    </div>
+
+    <!-- Navegação por abas estilo Tkinter Notebook com tons âmbar -->
+    <div class="nav-abas-envolve">
+    <span class="sinal-abas sinal-abas-esq" aria-hidden="true"><i class="fa-solid fa-chevron-left"></i></span>
+    <nav class="nav-abas sem-scroll max-w-7xl mx-auto px-2 sm:px-4 flex gap-1 overflow-x-auto pt-2 pb-0.5" aria-label="Secções da aplicação">
+      <button onclick="trocarAba('empresa')" id="tab-btn-empresa" class="nav-tab shrink-0 px-3 sm:px-4 xl:px-3.5 py-2 text-[13px] sm:text-sm font-semibold rounded-t-lg border-t-2 border-x-2 border-transparent bg-brand-amberTab hover:bg-brand-amber/80 text-stone-800 transition whitespace-nowrap">
+        <i class="fa-solid fa-building mr-1.5" aria-hidden="true"></i> Empresa
+      </button>
+      <button onclick="trocarAba('clientes')" id="tab-btn-clientes" class="nav-tab shrink-0 px-3 sm:px-4 xl:px-3.5 py-2 text-[13px] sm:text-sm font-semibold rounded-t-lg border-t-2 border-x-2 border-transparent bg-brand-amberTab hover:bg-brand-amber/80 text-stone-800 transition whitespace-nowrap">
+        <i class="fa-solid fa-users mr-1.5" aria-hidden="true"></i> Clientes
+      </button>
+      <button onclick="trocarAba('agenda')" id="tab-btn-agenda" class="nav-tab shrink-0 px-3 sm:px-4 xl:px-3.5 py-2 text-[13px] sm:text-sm font-semibold rounded-t-lg border-t-2 border-x-2 border-transparent bg-brand-amberTab hover:bg-brand-amber/80 text-stone-800 transition whitespace-nowrap">
+        <i class="fa-solid fa-calendar-days mr-1.5" aria-hidden="true"></i> Agenda
+      </button>
+      <button onclick="trocarAba('financeiro')" id="tab-btn-financeiro" class="nav-tab shrink-0 px-3 sm:px-4 xl:px-3.5 py-2 text-[13px] sm:text-sm font-semibold rounded-t-lg border-t-2 border-x-2 border-transparent bg-brand-amberTab hover:bg-brand-amber/80 text-stone-800 transition whitespace-nowrap">
+        <i class="fa-solid fa-wallet mr-1.5" aria-hidden="true"></i> Financeiro
+      </button>
+      <button onclick="trocarAba('eletrica')" id="tab-btn-eletrica" class="nav-tab shrink-0 px-3 sm:px-4 xl:px-3.5 py-2 text-[13px] sm:text-sm font-semibold rounded-t-lg border-t-2 border-x-2 border-transparent bg-brand-amberTab hover:bg-brand-amber/80 text-stone-800 transition whitespace-nowrap">
+        <i class="fa-solid fa-bolt mr-1.5" aria-hidden="true"></i> Elétrica
+      </button>
+      <button onclick="trocarAba('seguranca')" id="tab-btn-seguranca" class="nav-tab shrink-0 px-3 sm:px-4 xl:px-3.5 py-2 text-[13px] sm:text-sm font-semibold rounded-t-lg border-t-2 border-x-2 border-transparent bg-brand-amberTab hover:bg-brand-amber/80 text-stone-800 transition whitespace-nowrap">
+        <i class="fa-solid fa-shield-halved mr-1.5" aria-hidden="true"></i> Segurança
+      </button>
+      <button onclick="trocarAba('solar')" id="tab-btn-solar" class="nav-tab shrink-0 px-3 sm:px-4 xl:px-3.5 py-2 text-[13px] sm:text-sm font-semibold rounded-t-lg border-t-2 border-x-2 border-transparent bg-brand-amberTab hover:bg-brand-amber/80 text-stone-800 transition whitespace-nowrap">
+        <i class="fa-solid fa-sun mr-1.5" aria-hidden="true"></i> Energia Solar
+      </button>
+      <button onclick="trocarAba('unificado')" id="tab-btn-unificado" class="nav-tab shrink-0 px-3 sm:px-4 xl:px-3.5 py-2 text-[13px] sm:text-sm font-semibold rounded-t-lg border-t-2 border-x-2 border-transparent bg-brand-amberTab hover:bg-brand-amber/80 text-stone-800 transition whitespace-nowrap">
+        <i class="fa-solid fa-file-invoice-dollar mr-1.5" aria-hidden="true"></i> Orçamento Unificado
+      </button>
+      <button onclick="trocarAba('nbr')" id="tab-btn-nbr" class="nav-tab shrink-0 px-3 sm:px-4 xl:px-3.5 py-2 text-[13px] sm:text-sm font-semibold rounded-t-lg border-t-2 border-x-2 border-transparent bg-brand-amberTab hover:bg-brand-amber/80 text-stone-800 transition whitespace-nowrap">
+        <i class="fa-solid fa-ruler-combined mr-1.5" aria-hidden="true"></i> Calc. NBR 5410
+      </button>
+    </nav>
+    <span class="sinal-abas sinal-abas-dir" aria-hidden="true"><i class="fa-solid fa-chevron-right"></i></span>
+    <div class="progresso-abas" aria-hidden="true"><i></i></div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl w-full mx-auto p-3 sm:p-4 lg:p-6 flex-grow">
+
+    <!-- AVISO PERSISTENTE DE ARMAZENAMENTO (cota esgotada / anexo ilegível) -->
+    <div id="aviso-armazenamento" class="hidden mb-4 rounded-xl border border-red-300 bg-red-50 border-l-4 border-l-red-500 p-3.5 flex items-start gap-3 shadow-sm">
+      <i class="fa-solid fa-triangle-exclamation text-red-600 mt-0.5"></i>
+      <p id="aviso-armazenamento-msg" class="text-xs text-red-900 font-semibold leading-relaxed flex-grow"></p>
+      <button onclick="ocultarAviso()" class="text-red-400 hover:text-red-700 text-sm px-1 shrink-0" title="Dispensar aviso">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- ==================== ABA 1: EMPRESA ==================== -->
+    <section id="aba-empresa" class="aba-conteudo hidden">
+      <div class="bg-brand-lightCream border-2 border-brand-amber rounded-2xl p-6 shadow-sm max-w-3xl mx-auto">
+        <h2 class="text-lg font-bold text-brand-deepOrange border-b border-brand-amber/50 pb-2 mb-6 flex items-center gap-2">
+          <i class="fa-solid fa-building"></i> Dados da Empresa Prestadora
+        </h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-bold text-stone-800 mb-1">Nome da Empresa:</label>
+            <input type="text" id="emp-nome" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-stone-800 mb-1">Telefone de Contacto / WhatsApp:</label>
+            <input type="text" id="emp-tel" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+          </div>
+          <div>
+            <label class="block text-sm font-bold text-stone-800 mb-1">E-mail:</label>
+            <input type="email" id="emp-email" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+          </div>
+          <div class="pt-4">
+            <button onclick="salvarDadosEmpresa()" class="px-5 py-2.5 bg-brand-amber hover:bg-brand-orange text-stone-900 hover:text-white font-bold text-sm rounded-lg shadow transition flex items-center gap-2">
+              <i class="fa-solid fa-save"></i> Salvar Dados da Empresa
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ABA 2: CLIENTES ==================== -->
+    <section id="aba-clientes" class="aba-conteudo hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Coluna Esquerda: Formulário de Cadastro/Edição -->
+        <div class="lg:col-span-4 bg-brand-lightCream border-2 border-brand-amber rounded-2xl p-5 shadow-sm">
+          <h2 id="cliente-form-titulo" class="text-base font-bold text-brand-deepOrange border-b border-brand-amber/50 pb-2 mb-4">
+            Registar Cliente
+          </h2>
+          <input type="hidden" id="cli-edit-id">
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-stone-800 mb-1">Nome do Cliente *:</label>
+              <input type="text" id="cli-nome" placeholder="Nome do cliente" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-800 mb-1">Morada Completa:</label>
+              <input type="text" id="cli-end" placeholder="Rua, número, bairro" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-800 mb-1">Telefone / WhatsApp:</label>
+              <input type="text" id="cli-tel" placeholder="(00) 00000-0000" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+            </div>
+            <div class="flex flex-col gap-2 pt-2">
+              <button onclick="salvarCliente()" id="btn-salvar-cli" class="w-full py-2 bg-brand-amber hover:bg-brand-orange text-stone-900 hover:text-white font-bold text-sm rounded-lg shadow transition">
+                Adicionar Cliente
+              </button>
+              <button onclick="cancelarEdicaoCliente()" id="btn-cancelar-cli" class="w-full py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold text-xs rounded-lg transition hidden">
+                Cancelar Edição
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Coluna Direita: Lista, Busca, CSV e Anexos -->
+        <div class="lg:col-span-8 bg-brand-lightCream border-2 border-brand-amber rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-brand-amber/50 pb-3 mb-4">
+              <h2 class="text-base font-bold text-brand-deepOrange flex items-center gap-2">
+                <i class="fa-solid fa-users"></i> Clientes Registados e Mídias dos Serviços
+              </h2>
+              <span class="text-xs text-stone-500 font-medium">Dê dois cliques para aplicar ao orçamento</span>
+            </div>
+
+            <!-- Busca Instantânea -->
+            <div class="mb-4">
+              <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-stone-400 text-sm"></i>
+                <input type="text" id="busca-cliente" oninput="aoEscreverNaBusca()" placeholder="Pesquisar por nome ou morada..." class="w-full bg-white border border-stone-300 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+              </div>
+            </div>
+
+            <!-- Tabela de Clientes -->
+            <div class="area-tabela overflow-x-auto max-h-80 overflow-y-auto rounded-lg border border-stone-200 bg-white">
+              <table class="tabela-resp w-full text-left border-collapse text-xs sm:text-sm">
+                <thead class="bg-brand-darkOrange text-white sticky top-0">
+                  <tr>
+                    <th class="p-2.5 font-bold">Nome</th>
+                    <th class="p-2.5 font-bold">Morada</th>
+                    <th class="p-2.5 font-bold">Telefone</th>
+                    <th class="p-2.5 font-bold text-center">Mídias</th>
+                    <th class="p-2.5 font-bold text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-clientes-corpo" class="divide-y divide-stone-100">
+                  <!-- Injetado dinamicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Barra de Ações Rápidas Clientes -->
+          <div class="mt-4 pt-3 border-t border-brand-amber/40 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap gap-2">
+              <label class="cursor-pointer px-3 py-1.5 bg-amber-200 hover:bg-amber-300 text-stone-800 text-xs font-semibold rounded-lg transition flex items-center gap-1.5">
+                <i class="fa-solid fa-file-arrow-up text-brand-deepOrange"></i> Importar CSV
+                <input type="file" id="input-csv" accept=".csv" class="hidden" onchange="importarCSV(event)">
+              </label>
+              <button onclick="exportarCSV()" class="px-3 py-1.5 bg-amber-200 hover:bg-amber-300 text-stone-800 text-xs font-semibold rounded-lg transition flex items-center gap-1.5">
+                <i class="fa-solid fa-file-arrow-down text-brand-deepOrange"></i> Descarregar CSV
+              </button>
+            </div>
+            <p class="text-xs text-stone-500 italic">Total cadastrados: <span id="total-clientes-badge" class="font-bold text-brand-deepOrange">0</span></p>
+          </div>
+
+          <!-- CÓPIA DE SEGURANÇA: os dados vivem no armazenamento DESTE
+               navegador, por isso não aparecem noutro telemóvel nem noutro
+               computador. Esta é a única forma de os transportar. -->
+          <div class="mt-3 pt-3 border-t border-brand-amber/40">
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="btn-exportar-backup" onclick="exportarBackup()" class="px-3 py-1.5 bg-brand-amber hover:bg-brand-orange text-stone-900 hover:text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fa-solid fa-shield-halved text-brand-deepOrange"></i> Fazer cópia de segurança
+              </button>
+              <label class="cursor-pointer px-3 py-1.5 bg-amber-200 hover:bg-amber-300 text-stone-800 text-xs font-semibold rounded-lg transition flex items-center gap-1.5">
+                <i class="fa-solid fa-file-arrow-up text-brand-deepOrange"></i> Restaurar cópia
+                <input type="file" id="input-backup" accept=".json,application/json" class="hidden" onchange="importarBackup(event)">
+              </label>
+              <p class="text-xs text-stone-500 italic leading-snug">
+                Leva clientes, agenda, financeiro, orçamentos e fotos num único ficheiro, para abrir noutro aparelho.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ABA 3: AGENDA ==================== -->
+    <section id="aba-agenda" class="aba-conteudo hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Form de Agendamento -->
+        <div class="lg:col-span-4 bg-brand-lightCream border-2 border-brand-amber rounded-2xl p-5 shadow-sm">
+          <h2 class="text-base font-bold text-brand-deepOrange border-b border-brand-amber/50 pb-2 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-calendar-plus"></i> Agendar Compromisso / Visita
+          </h2>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs font-bold text-stone-800 mb-1">Cliente:</label>
+              <select id="agenda-cliente-select" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+                <!-- Injetado -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-800 mb-1">Ou Nome Avulso:</label>
+              <input type="text" id="agenda-cliente-avulso" placeholder="Nome avulso se não cadastrado" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-xs font-bold text-stone-800 mb-1">Data (DD-MM-AAAA):</label>
+                <input type="text" id="agenda-data" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-orange">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-800 mb-1">Horário (HH:MM):</label>
+                <input type="text" id="agenda-hora" value="09:00" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-orange">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-800 mb-1">Descrição / Serviço:</label>
+              <textarea id="agenda-desc" rows="3" placeholder="Descreva o serviço a realizar" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange"></textarea>
+            </div>
+            <button onclick="adicionarAgendamento()" class="w-full py-2 bg-brand-amber hover:bg-brand-orange text-stone-900 hover:text-white font-bold text-sm rounded-lg shadow transition">
+              Guardar na Agenda
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabela da Agenda -->
+        <div class="lg:col-span-8 bg-brand-lightCream border-2 border-brand-amber rounded-2xl p-5 shadow-sm">
+          <div class="flex justify-between items-center border-b border-brand-amber/50 pb-2 mb-4">
+            <h2 class="text-base font-bold text-brand-deepOrange flex items-center gap-2">
+              <i class="fa-solid fa-calendar-check"></i> Compromissos Agendados
+            </h2>
+            <span class="text-xs text-stone-600 font-semibold" id="agenda-contador">0 compromissos</span>
+          </div>
+
+          <div class="area-tabela overflow-x-auto max-h-96 overflow-y-auto rounded-lg border border-stone-200 bg-white">
+            <table class="tabela-resp w-full text-left border-collapse text-xs sm:text-sm">
+              <thead class="bg-brand-darkOrange text-white sticky top-0">
+                <tr>
+                  <th class="p-2.5 text-center font-bold">ID</th>
+                  <th class="p-2.5 font-bold">Cliente</th>
+                  <th class="p-2.5 font-bold">Data/Hora</th>
+                  <th class="p-2.5 font-bold">Descrição</th>
+                  <th class="p-2.5 text-center font-bold">Estado</th>
+                  <th class="p-2.5 text-center font-bold">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-agenda-corpo" class="divide-y divide-stone-100">
+                <!-- Injetado -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ABA 4: FINANCEIRO ==================== -->
+    <section id="aba-financeiro" class="aba-conteudo hidden">
+      <div class="space-y-6">
+        <!-- Formulário Financeiro -->
+        <div class="bg-brand-lightCream border-2 border-brand-amber rounded-2xl p-5 shadow-sm">
+          <h2 class="text-base font-bold text-brand-deepOrange border-b border-brand-amber/50 pb-2 mb-4 flex items-center justify-between">
+            <span><i class="fa-solid fa-cash-register"></i> Lançamento Financeiro</span>
+            <span id="badge-fin-modo" class="text-xs bg-brand-amberSoft text-stone-800 px-2 py-0.5 rounded font-normal hidden">Modo Edição</span>
+          </h2>
+          <input type="hidden" id="fin-edit-id">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-stone-800 mb-1">Nome do Cliente (Livre):</label>
+              <input type="text" id="fin-cliente" placeholder="Nome do cliente" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-800 mb-1">Serviço Realizado:</label>
+              <input type="text" id="fin-servico" placeholder="Descrição do serviço" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-800 mb-1">Valor Recebido / A Pagar (R$):</label>
+              <input type="number" step="0.01" id="fin-valor" placeholder="0.00" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-orange">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-stone-800 mb-1">Forma de Pagamento:</label>
+              <select id="fin-forma" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange">
+                <option value="Pix">Pix</option>
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Cartão de Débito">Cartão de Débito</option>
+                <option value="A Pagar / Fiado">A Pagar / Fiado</option>
+                <option value="Transferência Bancária">Transferência Bancária</option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-4 flex gap-3">
+            <button onclick="salvarFinanceiro()" id="btn-fin-salvar" class="px-5 py-2 bg-brand-amber hover:bg-brand-orange text-stone-900 hover:text-white font-bold text-sm rounded-lg shadow transition">
+              Salvar Lançamento no Histórico
+            </button>
+            <button onclick="cancelarEdicaoFinanceiro()" id="btn-fin-cancelar" class="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold text-xs rounded-lg transition hidden">
+              Cancelar Edição
+            </button>
+          </div>
+        </div>
+
+        <!-- Histórico e Indicadores -->
+        <div class="bg-brand-lightCream border-2 border-brand-amber rounded-2xl p-5 shadow-sm">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-brand-amber/50 pb-3 mb-4">
+            <h2 class="text-base font-bold text-brand-deepOrange flex items-center gap-2">
+              <i class="fa-solid fa-list-check"></i> Histórico Financeiro Registrado
+            </h2>
+            <div class="flex gap-4 text-xs font-semibold">
+              <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full border border-green-300">
+                Recebido: <span id="fin-total-recebido">R$ 0,00</span>
+              </span>
+              <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full border border-amber-300">
+                A Receber / Fiado: <span id="fin-total-fiado">R$ 0,00</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="area-tabela overflow-x-auto max-h-80 overflow-y-auto rounded-lg border border-stone-200 bg-white">
+            <table class="tabela-resp w-full text-left border-collapse text-xs sm:text-sm">
+              <thead class="bg-brand-darkOrange text-white sticky top-0">
+                <tr>
+                  <th class="p-2.5 text-center font-bold">ID</th>
+                  <th class="p-2.5 font-bold">Cliente</th>
+                  <th class="p-2.5 font-bold">Serviço</th>
+                  <th class="p-2.5 font-bold text-right">Valor (R$)</th>
+                  <th class="p-2.5 text-center font-bold">Forma de Pagamento</th>
+                  <th class="p-2.5 text-center font-bold">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-fin-corpo" class="divide-y divide-stone-100">
+                <!-- Injetado -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ABAS DE SERVIÇOS (Elétrica, Segurança, Solar) ==================== -->
+    <!-- Template renderizado dinamicamente via JS para manter consistência exata -->
+    <section id="aba-eletrica" class="aba-conteudo hidden"></section>
+    <section id="aba-seguranca" class="aba-conteudo hidden"></section>
+    <section id="aba-solar" class="aba-conteudo hidden"></section>
+
+    <!-- ==================== ABA 8: ORÇAMENTO UNIFICADO ==================== -->
+    <section id="aba-unificado" class="aba-conteudo hidden">
+      <div class="bg-brand-lightCream border-2 border-brand-amber rounded-2xl p-5 shadow-sm space-y-5">
+        <!-- Topo: Dados do Cliente Unificado -->
+        <div class="bg-white p-4 rounded-xl border border-brand-amberSoft">
+          <h2 class="text-sm font-bold text-brand-deepOrange mb-3">Cliente do Orçamento Unificado</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-stone-700 mb-1">Selecionar Cliente:</label>
+              <select id="unificado-cli-select" onchange="selecionarClienteParaOrcamento('unificado')" class="w-full bg-stone-50 border border-stone-300 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-brand-orange">
+                <!-- Preenchido -->
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-stone-700 mb-1">Morada:</label>
+              <input type="text" id="unificado-cli-end" placeholder="Morada do cliente" class="w-full bg-stone-50 border border-stone-300 rounded-lg px-3 py-1.5 text-xs">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-stone-700 mb-1">Telefone:</label>
+              <input type="text" id="unificado-cli-tel" placeholder="Telefone do cliente" class="w-full bg-stone-50 border border-stone-300 rounded-lg px-3 py-1.5 text-xs">
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabela Geral Consolidada -->
+        <div class="area-tabela overflow-x-auto max-h-96 overflow-y-auto rounded-lg border border-stone-200 bg-white">
+          <table class="tabela-resp w-full text-left border-collapse text-xs sm:text-sm">
+            <thead class="bg-brand-darkOrange text-white sticky top-0">
+              <tr>
+                <th class="p-2.5 font-bold">Setor</th>
+                <th class="p-2.5 font-bold">Descrição do Serviço</th>
+                <th class="p-2.5 font-bold text-center">Qtd</th>
+                <th class="p-2.5 font-bold text-right">Val. Unit.</th>
+                <th class="p-2.5 font-bold text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-unificado-corpo" class="divide-y divide-stone-100">
+              <!-- Consolidado de todos os setores -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Barra Inferior de Totais e Ações -->
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-brand-amberSoft/60 p-4 rounded-xl border border-brand-amber">
+          <div class="text-lg font-bold text-brand-deepOrange text-center sm:text-left" id="total-unificado-label">
+            Valor Total Consolidado: R$ 0,00
+          </div>
+          <div class="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:items-center">
+            <button onclick="enviarWhatsAppOrcamento('Unificado')" class="px-2 sm:px-4 py-2 sm:py-2 bg-brand-whatsapp hover:bg-brand-whatsappHover text-white font-bold text-[11px] sm:text-xs rounded-lg shadow transition flex items-center justify-center gap-1.5 sm:gap-2">
+              <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
+            </button>
+            <button onclick="imprimirOuVisualizarOrcamento('Unificado', true)" class="px-2 sm:px-4 py-2 bg-brand-amber hover:bg-brand-orange text-stone-900 hover:text-white font-bold text-[11px] sm:text-xs rounded-lg shadow transition flex items-center justify-center gap-1.5 sm:gap-2">
+              <i class="fa-solid fa-eye"></i> Vis. PDF
+            </button>
+              <button onclick="imprimirOuVisualizarOrcamento('Unificado', false)" class="px-2 sm:px-4 py-2 bg-brand-deepOrange hover:bg-brand-darkOrange text-white font-bold text-[11px] sm:text-xs rounded-lg shadow transition flex items-center justify-center gap-1.5 sm:gap-2">
+              <i class="fa-solid fa-download"></i> Descarregar PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ABA 9: CALCULADORA NBR 5410 ==================== -->
+    <section id="aba-nbr" class="aba-conteudo hidden">
+      <div class="bg-brand-lightCream border-2 border-brand-amber rounded-2xl p-6 shadow-sm max-w-3xl mx-auto space-y-6">
+        <div class="border-b border-brand-amber/50 pb-2">
+          <h2 class="text-base font-bold text-brand-deepOrange flex items-center gap-2">
+            <i class="fa-solid fa-calculator"></i> Dimensionamento Elétrico Monofásico / Bifásico (NBR 5410)
+          </h2>
+          <p class="text-xs text-stone-500 mt-1">Cálculo de corrente de projeto, bitola de condutores, condutor de proteção e queda de tensão máxima.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-stone-800 mb-1">Potência da Carga (W):</label>
+            <input type="number" id="nbr-pot" value="5000" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-orange">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-800 mb-1">Tensão Nominal (V):</label>
+            <input type="number" id="nbr-ten" value="220" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-orange">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-800 mb-1">Distância do Circuito (m):</label>
+            <input type="number" id="nbr-dist" value="15" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-orange">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-800 mb-1">Fator de Potência (cos φ):</label>
+            <input type="number" step="0.01" id="nbr-fp" value="0.92" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-orange">
+          </div>
+        </div>
+
+        <div>
+          <button onclick="calcularNBR5410()" class="w-full py-2.5 bg-brand-amber hover:bg-brand-orange text-stone-900 hover:text-white font-bold text-sm rounded-lg shadow transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-play"></i> Calcular Dimensionamento
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-stone-800 mb-1">Resultado do Dimensionamento:</label>
+          <pre id="nbr-resultado" class="bg-stone-900 text-amber-300 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed border border-stone-800 min-h-[140px]">Clique em 'Calcular Dimensionamento' para obter os resultados com base na NBR 5410.</pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: Gerenciador de Anexos do Cliente -->
+  <div id="modal-anexos" class="fixed inset-0 bg-black/60 z-50 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-brand-darkOrange text-base" id="modal-anexos-titulo">Mídias do Cliente</h3>
+        <button onclick="fecharModalAnexos()" class="text-stone-400 hover:text-stone-700 text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <label class="block text-xs font-semibold text-stone-600">Adicionar nova mídia (Foto, Esquema ou Documento):</label>
+        <input type="file" id="modal-upload-input" multiple class="block w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-stone-800 hover:file:bg-amber-200 cursor-pointer">
+        <p class="text-[11px] text-stone-500 leading-relaxed">
+          <i class="fa-solid fa-database text-brand-deepOrange"></i>
+          Os ficheiros são guardados na base de dados local do navegador (IndexedDB), <b>fora</b> do limite de 5 MB que causava perda de dados.
+        </p>
+      </div>
+
+      <div>
+        <h4 class="text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Arquivos Anexados:</h4>
+        <div id="modal-anexos-lista" class="max-h-[45vh] sm:max-h-52 overflow-y-auto overscroll-contain space-y-2 border rounded-xl p-2 bg-stone-50 text-xs">
+          <!-- Lista de arquivos com preview ou download -->
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="fecharModalAnexos()" class="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold text-xs rounded-lg">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Edição rápida de item de orçamento -->
+  <div id="modal-editar-item" class="fixed inset-0 bg-black/60 z-50 flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-4 sm:p-5 shadow-2xl space-y-4 my-auto max-h-[calc(100dvh-1.5rem)] overflow-y-auto overscroll-contain">
+      <h3 class="font-bold text-brand-darkOrange text-base">Editar Item do Orçamento</h3>
+      <input type="hidden" id="edit-item-setor">
+      <input type="hidden" id="edit-item-index">
+      <div>
+        <label class="block text-xs font-semibold text-stone-700 mb-1">Descrição:</label>
+        <input type="text" id="edit-item-desc" class="w-full bg-stone-50 border border-stone-300 rounded-lg px-3 py-1.5 text-xs font-semibold">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-stone-700 mb-1">Quantidade:</label>
+          <input type="number" step="0.1" id="edit-item-qtd" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-1.5 text-xs">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-700 mb-1">Valor Unitário (R$):</label>
+          <input type="number" step="0.01" id="edit-item-unit" class="w-full bg-white border border-stone-300 rounded-lg px-3 py-1.5 text-xs">
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="fecharModalEditarItem()" class="px-3 py-1.5 bg-stone-200 text-stone-700 text-xs rounded-lg font-semibold">Cancelar</button>
+        <button onclick="salvarItemEditado()" class="px-4 py-1.5 bg-brand-amber hover:bg-brand-orange text-stone-900 hover:text-white font-bold text-xs rounded-lg">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICAÇÃO TOAST CUSTOMIZADA (Sem alert()) -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-stone-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl z-50 transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2">
+    <i id="toast-icon" class="fa-solid fa-circle-check text-green-400"></i>
+    <span id="toast-msg">Notificação</span>
+  </div>
+
+  <footer class="bg-[#FFF3D0] border-t border-[#FFB300] py-2.5 px-3 sm:px-6 pb-[calc(0.625rem+env(safe-area-inset-bottom))]">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-1 text-[11px] sm:text-xs text-center sm:text-left">
+      <span class="text-stone-500 font-medium"><span id="footer-empresa"></span> <span class="hidden sm:inline">• </span>Sistema Profissional de Orçamentos</span>
+      <span class="italic text-stone-500">developed by Rotta Design</span>
+    </div>
+  </footer>
+
+  <!-- ==================== LOGICA JAVASCRIPT INTEGRADA ==================== -->
+  <script>
+    // v3: arranque limpo. A v2 trazia clientes e dados de empresa de exemplo,
+    // por isso o estado guardado com a v2 é descartado de propósito.
+    const STORAGE_KEY = "rotta_orcamentos_data_v3";
+    const STORAGE_KEY_LEGADO = "rotta_orcamentos_data_v2";
+
+    // Catálogo de Serviços idêntico ao código Python
+    const CATALOGO_SERVICOS = {
+      "Eletrica": [
+        ["Instalação de Tomada / Interruptor", 0.00, "un"],
+        ["Instalação de Chuveiro Elétrico", 0.00, "un"],
+        ["Montagem / Manutenção de QDL (Quadro de Distribuição)", 0.00, "un"],
+        ["Passagem de Infraestrutura / Eletroduto", 0.00, "m"],
+        ["Instalação de Luminária / Lustre / Plafon", 0.00, "un"],
+        ["Troca de Disjuntor Termomagnético", 0.00, "un"],
+        ["Instalação de Ventilador de Teto", 0.00, "un"],
+        ["Lançamento de Cabo / Condutor Elétrico", 0.00, "m"],
+        ["Instalação de Tomada Especial (Ar-Condicionado / Fogão)", 0.00, "un"],
+        ["Instalação de IDR / DPS no Quadro", 0.00, "un"],
+        ["Instalação de Sensor de Presença / Minuteria", 0.00, "un"],
+        ["Instalação de Aterramento (Haste + Cabo)", 0.00, "cj"],
+        ["Instalação de Placa de Sinalização de Emergência", 0.00, "un"],
+        ["Instalação de Bloco de Iluminação de Emergência", 0.00, "un"],
+        ["Montagem de Eletrocalha / Perfilado / Leito", 0.00, "m"],
+        ["Instalação de Campainha / Interfone Simples", 0.00, "un"],
+        ["Instalação de Torneira ou Aquecedor Elétrico", 0.00, "un"],
+        ["Instalação de Reator para Lâmpada Fluorescente", 0.00, "un"],
+        ["Instalação de Módulo de Automação / Smart Switch", 0.00, "un"],
+        ["Instalação de Calha Metálica para Cabeamento", 0.00, "m"]
+      ],
+      "Seguranca": [
+        ["Instalação de Câmera CFTV IP/HD", 0.00, "un"],
+        ["Configuração de DVR / NVR / Acesso Remoto", 0.00, "un"],
+        ["Instalação de Central de Alarme Monitorado", 0.00, "un"],
+        ["Instalação de Sensor de Abertura / Presença p/ Alarme", 0.00, "un"],
+        ["Instalação de Cerca Elétrica", 0.00, "m"],
+        ["Instalação de Motor para Portão Eletrônico", 0.00, "un"],
+        ["Instalação de Interfone Residencial", 0.00, "un"],
+        ["Instalação de Vídeo Porteiro", 0.00, "un"],
+        ["Instalação de Fechadura Eletrônica / Digital", 0.00, "un"],
+        ["Passagem de Cabeçamento p/ CFTV / Alarme", 0.00, "m"],
+        ["Instalação de Sensor Infravermelho Ativo (Barreira)", 0.00, "un"],
+        ["Instalação de Sirene Suplementar de Alarme", 0.00, "un"],
+        ["Instalação de Módulo GSM / Wi-Fi para Alarme", 0.00, "un"],
+        ["Instalação de Cancelas Automáticas de Acesso", 0.00, "un"],
+        ["Instalação de Leitor Biométrico / Facial de Acesso", 0.00, "un"],
+        ["Instalação de Botão de Pânico / Emergência", 0.00, "un"],
+        ["Instalação de Concertina / Ouriço Protetor", 0.00, "m"],
+        ["Manutenção Preventiva de Sistema CFTV (Limpeza/Ajustes)", 0.00, "cj"],
+        ["Configuração de Aplicação de Monitoramento Celular", 0.00, "sv"],
+        ["Instalação de Router / Repetidor Wi-Fi p/ Câmeras", 0.00, "un"]
+      ],
+      "Solar": [
+        ["Instalação de Módulo Fotovoltaico (Painel Solar)", 0.00, "un"],
+        ["Montagem de Estrutura de Fixação em Telhado", 0.00, "un"],
+        ["Instalação e Comissionamento de Inversor", 0.00, "un"],
+        ["Montagem de String Box CA / CC", 0.00, "un"],
+        ["Projeto e Homologação junto à Concessionária", 0.00, "vb"],
+        ["Infraestrutura de Cabeçamento Corrente Contínua (CC)", 0.00, "m"],
+        ["Instalação de Microinversor Solar", 0.00, "un"],
+        ["Instalação de Padrão de Entrada Bifásico/Trifásico", 0.00, "un"],
+        ["Limpeza e Manutenção Preventiva de Sistema Solar", 0.00, "cj"],
+        ["Laudo de Inspeção e ART de Instalação Solar", 0.00, "vb"]
+      ]
+    };
+
+    // Estado Geral da Aplicação
+    // Arranca propositadamente VAZIO: sem dados de demonstração. Tudo o que
+    // for criado a partir daqui (empresa, clientes, agenda, financeiro) é real
+    // e guardado no dispositivo do utilizador.
+    let AppState = {
+      empresa: {
+        nome: "",
+        telefone: "",
+        email: ""
+      },
+      clientes: [],
+      agenda: [],
+      financeiro: [],
+      orcamentos: {
+        Eletrica: [],
+        Seguranca: [],
+        Solar: []
+      },
+      clienteAtivoOrcamento: {
+        id: null,
+        nome: "",
+        endereco: "",
+        telefone: ""
+      }
+    };
+
+    let clienteEmEdicaoId = null;
+    let financeiroEmEdicaoId = null;
+    let clienteParaAnexosId = null;
+
+    /* Identificadores de cliente, agendamento e lançamento financeiro.
+       Antes cada um usava o seu próprio esquema (Date.now() nos clientes,
+       Math.max(...)+1 nos restantes). Date.now() colide sempre que dois
+       registos são criados no mesmo milissegundo — sobretudo ao importar
+       um CSV logo a seguir a criar um cliente à mão — e um ID repetido faz
+       "editar" e "excluir" afetarem vários registos de uma vez. Uma única
+       sequência crescente, inicializada acima do maior ID guardado,
+       elimina as colisões. */
+    let sequenciaId = 0;
+
+    function garantirSequenciaId() {
+      let maior = Date.now();
+      const registos = []
+        .concat(AppState.clientes || [], AppState.agenda || [], AppState.financeiro || []);
+      registos.forEach(r => {
+        if (typeof r.id === "number" && isFinite(r.id) && r.id > maior) maior = r.id;
+      });
+      sequenciaId = maior;
+    }
+
+    function gerarId() {
+      return ++sequenciaId;
+    }
+
+    function showToast(msg, type = "success") {
+      const toast = document.getElementById("toast");
+      const toastMsg = document.getElementById("toast-msg");
+      const toastIcon = document.getElementById("toast-icon");
+
+      toastMsg.innerText = msg;
+      if (type === "success") {
+        toastIcon.className = "fa-solid fa-circle-check text-green-400";
+      } else if (type === "info") {
+        // Progresso: sem este ramo, uma mensagem informativa aparecia com o
+        // ícone vermelho de erro.
+        toastIcon.className = "fa-solid fa-circle-info text-sky-400";
+      } else if (type === "warning") {
+        toastIcon.className = "fa-solid fa-triangle-exclamation text-amber-400";
+      } else {
+        toastIcon.className = "fa-solid fa-circle-xmark text-red-400";
+      }
+
+      toast.classList.remove("translate-y-20", "opacity-0");
+      // Um timer por toast escondia a mensagem recente quando um toast
+      // anterior expirava: passa a haver um único timer, reiniciado.
+      if (toast._timer) clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => {
+        toast.classList.add("translate-y-20", "opacity-0");
+      }, 3200);
+    }
+
+    // Limite real do localStorage por origem (5 MB). O anexos já NÃO contam para este valor.
+    const LIMITE_LOCALSTORAGE = 5 * 1024 * 1024;
+
+    function salvarEstadoGeral() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(AppState));
+        ocultarAviso();
+        atualizarMedidorArmazenamento();
+        return true;
+      } catch (e) {
+        console.error("Erro ao salvar no storage:", e);
+        atualizarMedidorArmazenamento();
+        tratarFalhaArmazenamento(e);
+        return false;
+      }
+    }
+
+    /* Confirma ao utilizador que a operação ficou gravada.
+       Sem isto, uma alta emitia "Cliente cadastrado com sucesso!" e só DEPOIS
+       tentava gravar: com a cota de 5 MB esgotada o utilizador via sucesso e
+       perdia tudo ao fechar a aba. Cada operação tem de gravar primeiro e só
+       depois, se tiver corrido bem, mostrar a confirmação. Devolve false
+       quando a gravação falhou (nesse caso o aviso de erro já foi mostrado). */
+    function confirmarGravacao(mensagem, tipo = "success") {
+      if (!salvarEstadoGeral()) return false;
+      showToast(mensagem, tipo);
+      return true;
+    }
+
+    function tratarFalhaArmazenamento(e) {
+      // O nome da exceção varia muito entre browsers e versões: o Firefox
+      // antigo atirava DOMException (code 22/1014), o Chrome atual atira
+      // QuotaExceededError e o Safari não é especificado. Detetar só o nome
+      // fazia a cota esgotada ser diagnosticada como "falha genérica".
+      const msg = String((e && (e.name || e.message || e.code)) || e || "").toLowerCase();
+      const semEspaco = !!e && (
+        e.name === "QuotaExceededError" ||
+        e.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+        e.code === 22 || e.code === 1014 ||
+        /quota|storage|exceed|limite|full/.test(msg)
+      );
+
+      if (semEspaco) {
+        mostrarAviso(
+          "Espaço de armazenamento do navegador esgotado: as alterações NÃO foram guardadas e podem ser perdidas ao fechar esta página. " +
+          "Reduza o volume de dados (clientes, orçamentos e lançamentos) e evite anexos muito pesados. Os anexos de mídia já são guardados fora deste limite."
+        );
+        showToast("Armazenamento cheio: alterações não foram guardadas!", "error");
+      } else {
+        mostrarAviso(
+          "Não foi possível guardar os dados neste navegador. As alterações desta sessão podem ser perdidas ao fechar a página."
+        );
+        showToast("Falha ao guardar os dados.", "error");
+      }
+    }
+
+    function mostrarAviso(mensagem) {
+      const banner = document.getElementById("aviso-armazenamento");
+      const texto = document.getElementById("aviso-armazenamento-msg");
+      if (!banner || !texto) {
+        showToast(mensagem, "warning");
+        return;
+      }
+      texto.textContent = mensagem;
+      banner.classList.remove("hidden");
+    }
+
+    function ocultarAviso() {
+      const banner = document.getElementById("aviso-armazenamento");
+      if (banner) banner.classList.add("hidden");
+    }
+
+    function formatarBytes(bytes) {
+      const b = Number(bytes);
+      if (!isFinite(b) || b < 0) return "0 B";
+      if (b < 1024) return `${b} B`;
+      if (b < 1024 * 1024) return `${(b / 1024).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} KB`;
+      return `${(b / (1024 * 1024)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} MB`;
+    }
+
+    function tamanhoPayloadLocalStorage() {
+      try {
+        const bruto = localStorage.getItem(STORAGE_KEY) || "";
+        return new Blob([bruto]).size;
+      } catch (e) {
+        return 0;
+      }
+    }
+
+    function atualizarMedidorArmazenamento() {
+      const badge = document.getElementById("medidor-armazenamento");
+      if (!badge) return;
+
+      const usado = tamanhoPayloadLocalStorage();
+      const pct = Math.min(100, Math.round((usado / LIMITE_LOCALSTORAGE) * 100));
+
+      badge.innerText = `${formatarBytes(usado)} em uso`;
+      badge.title = `Dados da aplicação: ${formatarBytes(usado)} de ${formatarBytes(LIMITE_LOCALSTORAGE)} (${pct}%) — limite do localStorage neste navegador. Os anexos não contam para este valor.`;
+      badge.className = "px-2 py-1 rounded text-[10px] font-mono border " + (
+        pct >= 85 ? "bg-red-100 text-red-800 border-red-300 font-bold" :
+        pct >= 60 ? "bg-amber-100 text-amber-800 border-amber-300 font-semibold" :
+        "bg-stone-100 text-stone-600 border-stone-300"
+      );
+
+      if (pct >= 85) {
+        mostrarAviso(
+          `O armazenamento local está em ${pct}% do limite do navegador (${formatarBytes(usado)} de ${formatarBytes(LIMITE_LOCALSTORAGE)}). ` +
+          "Ao atingir 100% as alterações deixam de ser guardadas."
+        );
+      }
+    }
+
+    /* Valida e completa o estado lido do armazenamento.
+       O merge anterior ( { ...AppState, ...parsed } ) copia chaves inteiras:
+       um payload guardado sem "orcamentos.Solar" deixava esse setor a
+       undefined e a renderização rebentava com "Cannot read properties of
+       undefined". Aqui cada campo é reconvertido ao seu tipo, valores
+       numéricos inválidos são reparados e listas degeneradas viram vazias —
+       sem deitar fora dados válidos. */
+    function normalizarEstado(estado) {
+      const base = {
+        empresa: { nome: "", telefone: "", email: "" },
+        clientes: [],
+        agenda: [],
+        financeiro: [],
+        orcamentos: { Eletrica: [], Seguranca: [], Solar: [] },
+        clienteAtivoOrcamento: { id: null, nome: "", endereco: "", telefone: "" }
+      };
+      if (!estado || typeof estado !== "object") return base;
+
+      const texto = (v) => (v === null || v === undefined ? "" : String(v));
+      const numero = (v, omissao) => {
+        const n = typeof v === "number" ? v : parseFloat(v);
+        return isFinite(n) ? n : omissao;
+      };
+      const lista = (v) => (Array.isArray(v) ? v : []);
+      const objeto = (v) => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
+      // Listas de registos: entradas que não são objetos (null, strings)
+      // são lixo de ficheiro corrompido e originavam linhas em branco na UI.
+      const listaDeRegistos = (v) => lista(v).filter(x => x && typeof x === "object" && !Array.isArray(x));
+
+      const emp = objeto(estado.empresa);
+      base.empresa = {
+        nome: texto(emp.nome),
+        telefone: texto(emp.telefone),
+        email: texto(emp.email)
+      };
+
+      // IDs repetidos herdados de versões anteriores são desduplicados aqui.
+      const idsVistos = new Set();
+      const idUnico = (bruto) => {
+        let id = numero(bruto, null);
+        if (id === null) id = Date.now();
+        while (idsVistos.has(id)) id++;
+        idsVistos.add(id);
+        return id;
+      };
+
+      base.clientes = listaDeRegistos(estado.clientes).map(c => {
+        const cli = objeto(c);
+        return {
+          id: idUnico(cli.id),
+          nome: texto(cli.nome),
+          endereco: texto(cli.endereco),
+          telefone: texto(cli.telefone),
+          // Só se descarta o que é nulo/undefined: entradas antigas em outro
+          // formato são preservadas para a migração as tratar.
+          arquivos: lista(cli.arquivos).filter(a => a !== null && a !== undefined)
+        };
+      });
+
+      base.agenda = listaDeRegistos(estado.agenda).map(a => {
+        const it = objeto(a);
+        return {
+          id: idUnico(it.id),
+          clienteId: numero(it.clienteId, null),
+          cliente: texto(it.cliente),
+          dataHora: texto(it.dataHora),
+          descricao: texto(it.descricao),
+          status: it.status === "Concluído" ? "Concluído" : "Pendente"
+        };
+      });
+
+      base.financeiro = listaDeRegistos(estado.financeiro).map(f => {
+        const it = objeto(f);
+        return {
+          id: idUnico(it.id),
+          cliente: texto(it.cliente),
+          servico: texto(it.servico),
+          valor: numero(it.valor, 0),
+          formaPagamento: texto(it.formaPagamento) || "Pix"
+        };
+      });
+
+      const orc = objeto(estado.orcamentos);
+      ["Eletrica", "Seguranca", "Solar"].forEach(setor => {
+        base.orcamentos[setor] = listaDeRegistos(orc[setor]).map(bruto => {
+          const it = objeto(bruto);
+          const qtd = numero(it.qtd, 1);
+          const unitario = numero(it.unitario, 0);
+          return {
+            descricao: texto(it.descricao),
+            qtd: qtd,
+            unitario: unitario,
+            total: numero(it.total, qtd * unitario)
+          };
+        });
+      });
+
+      const ativo = objeto(estado.clienteAtivoOrcamento);
+      const idAtivo = idsVistos.has(numero(ativo.id, null)) ? numero(ativo.id, null) : null;
+      base.clienteAtivoOrcamento = {
+        id: idAtivo,
+        nome: texto(ativo.nome),
+        endereco: texto(ativo.endereco),
+        telefone: texto(ativo.telefone)
+      };
+
+      return base;
+    }
+
+    function carregarEstadoGeral() {
+      const dados = localStorage.getItem(STORAGE_KEY);
+      if (dados) {
+        try {
+          AppState = normalizarEstado(JSON.parse(dados));
+        } catch (e) {
+          console.error("Falha ao carregar estado do localStorage:", e);
+        }
+      }
+      garantirSequenciaId();
+
+      // O estado da v2 continha clientes e dados de empresa de demonstração.
+      // É apagado de propósito para o dispositivo ficar realmente limpo.
+      try {
+        if (localStorage.getItem(STORAGE_KEY_LEGADO)) {
+          localStorage.removeItem(STORAGE_KEY_LEGADO);
+          console.info("Estado de demonstração (v2) removido. A aplicação arrancou limpa.");
+        }
+      } catch (e) {
+        console.warn("Não foi possível limpar o estado antigo:", e);
+      }
+    }
+
+    // Mostra/esconde os sinais de "existem mais abas para o lado" e move a
+    // barra de progresso. Calculado em JS para bater certo com a realidade:
+    // no desktop em que caiba tudo, nenhum sinal aparece.
+    function atualizarSinalAbas() {
+      document.querySelectorAll(".nav-abas-envolve").forEach(env => {
+        const nav = env.querySelector(".nav-abas");
+        if (!nav) return;
+        const max = Math.max(0, nav.scrollWidth - nav.clientWidth);
+        const barra = env.querySelector(".progresso-abas > i");
+
+        env.classList.toggle("pode-rolar", max > 2);
+        env.classList.toggle("no-inicio", nav.scrollLeft <= 2);
+        env.classList.toggle("no-fim", nav.scrollLeft >= max - 2);
+
+        if (barra) {
+          // A barra tem duas dimensões distintas: a LARGURA é a fatia visível
+          // da lista e o DESLOCAMENTO é a posição atual. A versão anterior
+          // punha a fração visível na width, por isso a barra ficava
+          // parada no mesmo sítio durante todo o scroll.
+          const pctVisao = max > 0 ? (nav.clientWidth / nav.scrollWidth) * 100 : 100;
+          const pctPosicao = max > 0 ? (nav.scrollLeft / max) * 100 : 0;
+          barra.style.width = pctVisao + "%";
+          barra.style.left = pctPosicao + "%";
+        }
+      });
+    }
+
+    function centralizarAbaActiva(btn) {
+      const nav = btn.closest("nav");
+      if (!nav || nav.scrollWidth <= nav.clientWidth) return;
+
+      // offsetLeft é medido a partir do offsetParent. Como .nav-abas não é
+      // posicionado, vinham os valores do header e do body e o scroll
+      // ficava deslocado; a diferença entre os dois remove esse desvio.
+      const alvo = btn.offsetLeft - nav.offsetLeft - (nav.clientWidth / 2) + (btn.offsetWidth / 2);
+      const max = nav.scrollWidth - nav.clientWidth;
+      nav.scrollTo({
+        left: Math.max(0, Math.min(alvo, max)),
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+      });
+    }
+
+    function trocarAba(abaId) {
+      document.querySelectorAll(".aba-conteudo").forEach(el => el.classList.add("hidden"));
+      document.querySelectorAll(".nav-tab").forEach(el => el.classList.remove("tab-active"));
+
+      const target = document.getElementById(`aba-${abaId}`);
+      const btn = document.getElementById(`tab-btn-${abaId}`);
+
+      if (target) target.classList.remove("hidden");
+      if (btn) {
+        btn.classList.add("tab-active");
+        centralizarAbaActiva(btn);
+      }
+
+      // Gatilhos de atualização específicos
+      if (abaId === 'unificado') {
+        renderizarTabelaUnificada();
+      } else if (abaId === 'agenda') {
+        renderizarTabelaAgenda();
+      } else if (abaId === 'financeiro') {
+        renderizarTabelaFinanceiro();
+      }
+
+      atualizarSinalAbas();
+    }
+
+    function carregarDadosEmpresaUI() {
+      document.getElementById("emp-nome").value = AppState.empresa.nome || "";
+      document.getElementById("emp-tel").value = AppState.empresa.telefone || "";
+      document.getElementById("emp-email").value = AppState.empresa.email || "";
+
+      document.getElementById("header-empresa-nome").innerText = AppState.empresa.nome || "Clientes e orçamentos";
+      const tel = document.getElementById("header-empresa-tel");
+      const email = document.getElementById("header-empresa-email");
+      // Sem valores inventados: se o campo estiver vazio, o contacto desaparece.
+      tel.innerHTML = AppState.empresa.telefone
+        ? `<i class="fa-solid fa-phone text-stone-400"></i> ${AppState.empresa.telefone}` : "";
+      email.innerHTML = AppState.empresa.email
+        ? `<i class="fa-solid fa-envelope text-stone-400"></i> ${AppState.empresa.email}` : "";
+      // O separador "•" só aparece quando há os dois contactos preenchidos.
+      const separador = document.getElementById("header-empresa-separador");
+      if (separador) separador.classList.toggle("hidden", !(AppState.empresa.telefone && AppState.empresa.email));
+      document.getElementById("footer-empresa").innerText = AppState.empresa.nome || "";
+    }
+
+    function salvarDadosEmpresa() {
+      const nome = document.getElementById("emp-nome").value.trim();
+      const tel = document.getElementById("emp-tel").value.trim();
+      const email = document.getElementById("emp-email").value.trim();
+
+      AppState.empresa = { nome, telefone: tel, email };
+      carregarDadosEmpresaUI();
+      confirmarGravacao("Dados da empresa atualizados com sucesso!");
+    }
+
+    let temporizadorBusca = null;
+
+    function aoEscreverNaBusca() {
+      // renderizarTabelaClientes() reconstrói também os <select> de cliente
+      // dos quatro orçamentos; ligado a cada tecla, arrastava a lista e
+      // fechava dropdowns abertos. Agora só filtra a tabela.
+      if (temporizadorBusca) clearTimeout(temporizadorBusca);
+      temporizadorBusca = setTimeout(() => {
+        temporizadorBusca = null;
+        renderizarTabelaClientes();
+      }, 180);
+    }
+
+    function renderizarTabelaClientes() {
+      const tbody = document.getElementById("tabela-clientes-corpo");
+      const filtro = (document.getElementById("busca-cliente")?.value || "").trim().toLowerCase();
+      tbody.innerHTML = "";
+
+      const filtrados = AppState.clientes.filter(c =>
+        c.nome.toLowerCase().includes(filtro) || (c.endereco && c.endereco.toLowerCase().includes(filtro))
+      );
+
+      document.getElementById("total-clientes-badge").innerText = AppState.clientes.length;
+
+      filtrados.forEach(c => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-amber-50/60 transition cursor-pointer select-none";
+        tr.title = "Dois cliques para carregar no orçamento";
+        tr.ondblclick = () => aplicarClienteAosOrcamentos(c.id);
+        // O stopPropagation no clique dos botões não impede o dblclick da
+        // linha: carregar duas vezes no ícone de editar também aplicava o
+        // cliente ao orçamento. O dblclick acima dos botões fica anulado.
+        tr.addEventListener("dblclick", (ev) => {
+          if (ev.target.closest("button")) ev.stopPropagation();
+        });
+
+        const qtdMidias = (c.arquivos || []).length;
+
+        tr.innerHTML = `
+          <td class="td-titulo p-2.5 font-bold text-stone-800" data-label="Cliente">${escapeHtml(c.nome)}</td>
+          <td class="p-2.5 text-stone-600" data-label="Morada">${escapeHtml(c.endereco || "-")}</td>
+          <td class="p-2.5 text-stone-600" data-label="Telefone">${escapeHtml(c.telefone || "-")}</td>
+          <td class="td-midias p-2.5 text-center" data-label="Mídias">
+            <button onclick="abrirModalAnexos(${c.id}); event.stopPropagation();" class="px-2 py-0.5 rounded text-xs font-semibold ${qtdMidias > 0 ? 'bg-amber-200 text-stone-900 font-bold' : 'bg-stone-100 text-stone-600'} hover:bg-brand-amber transition">
+              <i class="fa-solid fa-paperclip"></i> ${qtdMidias} arq(s)
+            </button>
+          </td>
+          <td class="td-acoes p-2.5 text-center whitespace-nowrap" data-label="Ações">
+            <div class="flex items-center justify-center gap-1.5" onclick="event.stopPropagation();">
+              <button onclick="aplicarClienteAosOrcamentos(${c.id})" title="Usar no Orçamento" class="btn-icone p-1.5 rounded hover:bg-amber-200 text-brand-deepOrange">
+                <i class="fa-solid fa-file-invoice"></i>
+              </button>
+              <button onclick="carregarClienteParaEdicao(${c.id})" title="Editar" class="btn-icone p-1.5 rounded hover:bg-stone-200 text-stone-700">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button onclick="excluirCliente(${c.id})" title="Excluir" class="btn-icone p-1.5 rounded hover:bg-red-100 text-red-600">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      atualizarSelectsClientesGerais();
+    }
+
+    function salvarCliente() {
+      const nome = document.getElementById("cli-nome").value.trim();
+      const end = document.getElementById("cli-end").value.trim();
+      const tel = document.getElementById("cli-tel").value.trim();
+
+      if (!nome) {
+        showToast("O nome do cliente é obrigatório.", "warning");
+        return;
+      }
+
+      // Nomes repetidos são ambiguos: os <select> dos orçamentos e da agenda
+      // identificavam o cliente pelo nome, acabando por aplicar a morada e o
+      // telefone do registo errado. Avisamos antes de criar o duplicado.
+      const homonimo = AppState.clientes.find(
+        c => !mesmoId(c.id, clienteEmEdicaoId) && c.nome.toLowerCase() === nome.toLowerCase()
+      );
+      if (homonimo) {
+        showToast("Já existe um cliente com esse nome. Edite-o em vez de criar outro.", "warning");
+        return;
+      }
+
+      if (clienteEmEdicaoId !== null) {
+        const idx = AppState.clientes.findIndex(c => mesmoId(c.id, clienteEmEdicaoId));
+        if (idx !== -1) {
+          AppState.clientes[idx].nome = nome;
+          AppState.clientes[idx].endereco = end;
+          AppState.clientes[idx].telefone = tel;
+        }
+        cancelarEdicaoCliente();
+        renderizarTabelaClientes();
+        confirmarGravacao("Cliente atualizado com sucesso!");
+        return;
+      }
+
+      AppState.clientes.push({
+        id: gerarId(),
+        nome: nome,
+        endereco: end,
+        telefone: tel,
+        arquivos: []
+      });
+      limparFormCliente();
+      renderizarTabelaClientes();
+      confirmarGravacao("Cliente cadastrado com sucesso!");
+    }
+
+    function carregarClienteParaEdicao(id) {
+      const cli = obterClientePorId(id);
+      if (!cli) return;
+
+      clienteEmEdicaoId = cli.id;
+      document.getElementById("cli-nome").value = cli.nome;
+      document.getElementById("cli-end").value = cli.endereco;
+      document.getElementById("cli-tel").value = cli.telefone;
+
+      document.getElementById("cliente-form-titulo").innerText = "Editar Cliente";
+      document.getElementById("btn-salvar-cli").innerText = "Salvar Alterações";
+      document.getElementById("btn-cancelar-cli").classList.remove("hidden");
+    }
+
+    function cancelarEdicaoCliente() {
+      clienteEmEdicaoId = null;
+      limparFormCliente();
+      document.getElementById("cliente-form-titulo").innerText = "Registar Cliente";
+      document.getElementById("btn-salvar-cli").innerText = "Adicionar Cliente";
+      document.getElementById("btn-cancelar-cli").classList.add("hidden");
+    }
+
+    function limparFormCliente() {
+      document.getElementById("cli-nome").value = "";
+      document.getElementById("cli-end").value = "";
+      document.getElementById("cli-tel").value = "";
+    }
+
+    function excluirCliente(id) {
+      const cli = obterClientePorId(id);
+      if (!cli) return;
+
+      const qtdAnexos = (cli.arquivos || []).length;
+      const avisoAnexos = qtdAnexos > 0 ? ` Os ${qtdAnexos} anexo(s) dele também serão eliminados.` : "";
+
+      if (!confirm(`Deseja realmente excluir o cliente "${cli.nome}"?${avisoAnexos}`)) return;
+
+      AppState.clientes = AppState.clientes.filter(c => !mesmoId(c.id, id));
+      if (mesmoId(clienteEmEdicaoId, id)) cancelarEdicaoCliente();
+      if (mesmoId(clienteParaAnexosId, id)) fecharModalAnexos();
+
+      apagarAnexosDoCliente(id, cli.arquivos).catch(e =>
+        console.error("Falha ao limpar anexos do cliente excluído:", e)
+      );
+
+      renderizarTabelaClientes();
+      confirmarGravacao("Cliente excluído.");
+    }
+
+    function aplicarClienteAosOrcamentos(id) {
+      const cli = obterClientePorId(id);
+      if (!cli) return;
+
+      definirClienteAtivo(cli);
+
+      // Atualiza os formulários das abas de serviço e unificado
+      ["eletrica", "seguranca", "solar", "unificado"].forEach(setor => {
+        const sel = document.getElementById(`${setor}-cli-select`);
+        const endInput = document.getElementById(`${setor}-cli-end`);
+        const telInput = document.getElementById(`${setor}-cli-tel`);
+
+        if (sel) sel.value = String(cli.id);
+        if (endInput) endInput.value = cli.endereco || "";
+        if (telInput) telInput.value = cli.telefone || "";
+      });
+
+      // Também pré-seleciona na agenda
+      const selAgenda = document.getElementById("agenda-cliente-select");
+      if (selAgenda) selAgenda.value = String(cli.id);
+
+      confirmarGravacao(`Cliente '${cli.nome}' aplicado a todos os orçamentos!`);
+    }
+
+    // Os IDs são guardados como número, mas chegam de <select> (string),
+    // de atributos data-* e de dados serializados. A comparação tem de
+    // sobreviver à conversão implícita do DOM.
+    function mesmoId(a, b) {
+      if (a === null || a === undefined || b === null || b === undefined) return false;
+      return String(a) === String(b);
+    }
+
+    function definirClienteAtivo(cli) {
+      AppState.clienteAtivoOrcamento = {
+        id: cli.id,
+        nome: cli.nome,
+        endereco: cli.endereco || "",
+        telefone: cli.telefone || ""
+      };
+    }
+
+    // Os orçamentos e a impresso/PDF referem-se ao cliente ativo por nome.
+    // Se o cliente tiver sido entretanto excluído ou renomeado, o que fica em
+    // cache ainda serve para não imprimir um documento sem destinatário.
+    function clienteAtivo() {
+      const ativo = AppState.clienteAtivoOrcamento || {};
+      const porId = obterClientePorId(ativo.id);
+      return {
+        nome: (porId && porId.nome) || ativo.nome || "",
+        endereco: (porId && porId.endereco) || ativo.endereco || "",
+        telefone: (porId && porId.telefone) || ativo.telefone || ""
+      };
+    }
+
+    function opcoesClientesHTML(primeiraOpcao) {
+      return `<option value="">${primeiraOpcao}</option>` + AppState.clientes.map(c =>
+        `<option value="${escapeHtml(String(c.id))}">${escapeHtml(c.nome)}</option>`
+      ).join("");
+    }
+
+    // Define o valor de um <select> de clientes só se essa opção existir.
+    // Sem esta verificação, sel.value = "" (o "-- Selecione --") fazia o
+    // browser criar uma opção-órfã e o cliente anterior ficava selecionado
+    // sem o utilizador ter pedido.
+    function selecionarSeExiste(select, valor) {
+      if (!select || valor === null || valor === undefined || valor === "") return false;
+      const opcao = select.querySelector(`option[value="${seletorSeguro(String(valor))}"]`);
+      if (!opcao) return false;
+      select.value = String(valor);
+      return true;
+    }
+
+    function atualizarSelectsClientesGerais() {
+      ["eletrica", "seguranca", "solar", "unificado"].forEach(setor => {
+        const select = document.getElementById(`${setor}-cli-select`);
+        if (!select) return;
+        const atual = select.value;
+        select.innerHTML = opcoesClientesHTML("-- Selecione um Cliente --");
+        if (!selecionarSeExiste(select, atual)) {
+          selecionarSeExiste(select, AppState.clienteAtivoOrcamento.id);
+        }
+      });
+
+      const selAgenda = document.getElementById("agenda-cliente-select");
+      if (selAgenda) {
+        const atualAgenda = selAgenda.value;
+        selAgenda.innerHTML = opcoesClientesHTML("-- Selecione ou use avulso --");
+        selecionarSeExiste(selAgenda, atualAgenda);
+      }
+    }
+
+    /* ===================================================================
+       AUTO-SALVO
+       ----------------------------------------------------------------
+       O cabeçalho anuncia "Auto-Salvo", portanto o estado tem de ser gravado
+       sem depender de o utilizador carregar em nada. Cada operação já grava
+       o seu estado; aqui garantimos que o que ficou por digitar (dados do
+       cliente nos orçamentos, por exemplo) não se perde ao fechar a página.
+       =================================================================== */
+    let temporizadorAutoSalvo = null;
+
+    function autoSalvar() {
+      if (temporizadorAutoSalvo) clearTimeout(temporizadorAutoSalvo);
+      temporizadorAutoSalvo = setTimeout(() => {
+        temporizadorAutoSalvo = null;
+        salvarEstadoGeral();
+      }, 700);
+    }
+
+    // Os quatro blocos de cliente (Elétrica, Segurança, Solar e Unificado)
+    // representam o mesmo cliente ativo: o que estiver preenchido passa a
+    // "cliente ativo" guardado, para ser reposto no próximo arranque.
+    function sincronizarClienteAtivo() {
+      const setores = ["eletrica", "seguranca", "solar", "unificado"];
+      for (const setor of setores) {
+        const sel = document.getElementById(`${setor}-cli-select`);
+        if (!sel || !sel.value) continue;
+
+        const cli = obterClientePorId(sel.value);
+        const end = document.getElementById(`${setor}-cli-end`);
+        const tel = document.getElementById(`${setor}-cli-tel`);
+
+        AppState.clienteAtivoOrcamento = {
+          id: sel.value,
+          nome: cli ? cli.nome : (sel.selectedOptions[0] || {}).textContent || "",
+          endereco: (end && end.value.trim()) || (cli && cli.endereco) || "",
+          telefone: (tel && tel.value.trim()) || (cli && cli.telefone) || ""
+        };
+        return;
+      }
+    }
+
+    function ligarAutoSalvo() {
+      ["eletrica", "seguranca", "solar", "unificado"].forEach(setor => {
+        ["cli-select", "cli-end", "cli-tel"].forEach(parte => {
+          const el = document.getElementById(`${setor}-${parte}`);
+          if (!el) return;
+          el.addEventListener("input", () => {
+            sincronizarClienteAtivo();
+            autoSalvar();
+          });
+        });
+      });
+
+      // pagehide é mais fiável que beforeunload e não impede o bfcache.
+      window.addEventListener("pagehide", () => {
+        if (temporizadorAutoSalvo) {
+          clearTimeout(temporizadorAutoSalvo);
+          temporizadorAutoSalvo = null;
+          salvarEstadoGeral();
+        }
+      });
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") {
+          if (temporizadorAutoSalvo) {
+            clearTimeout(temporizadorAutoSalvo);
+            temporizadorAutoSalvo = null;
+          }
+          salvarEstadoGeral();
+        }
+      });
+    }
+
+    const FORMATO_MOEDA = new Intl.NumberFormat("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    // Uma única função para todos os valores. Antes as linhas usavam
+    // toFixed(2) ("R$ 1234.50") e os totais usavam toLocaleString
+    // ("R$ 1.234,50"): o mesmo documento mostrava os dois formatos.
+    function formatarMoeda(valor) {
+      return FORMATO_MOEDA.format(Number(valor) || 0);
+    }
+
+    // A quantidade admitia decimais (step 0.1) mas era impressa sempre com
+    // uma casa: 0,25 aparecia como "0,3" enquanto o total usava 0,25.
+    function formatarQtd(qtd) {
+      const n = Number(qtd) || 0;
+      return Number.isInteger(n) ? n.toFixed(1) : String(Number(n.toFixed(3)));
+    }
+
+    function totalItens(itens) {
+      return (itens || []).reduce((acc, curr) => acc + (Number(curr.total) || 0), 0);
+    }
+
+    /* ===================================================================
+       ANEXOS DE MÍDIA — ARMAZENADOS EM INDEXEDDB (FORA DO localStorage)
+       ----------------------------------------------------------------
+       Problema corrigido: as fotos eram convertidas em base64 e guardadas
+       dentro do localStorage, cujo limite é ~5 MB por origem. Ao estourar
+       a cota, setItem() lançava QuotaExceededError e TODO o estado da
+       aplicação deixava de ser gravado — ou seja, perder-se-iam clientes,
+       agenda, financeiro e orçamentos inteiros sem qualquer aviso.
+
+       Agora o localStorage guarda apenas um manifesto leve
+       ({ id, nome, tipo, tamanho, criadoEm }) e o conteúdo binário real
+       vive no IndexedDB, como Blob nativo (sem o acréscimo de 33% do
+       base64 e com uma quota muito superior).
+       ================================================================ */
+    const ANEXOS_DB = "rotta_orcamentos_anexos";
+    const ANEXOS_STORE = "anexos";
+    let anexosDbPromessa = null;
+    const cacheThumbAnexos = new Map();
+
+    function abrirBancoAnexos() {
+      if (anexosDbPromessa) return anexosDbPromessa;
+
+      anexosDbPromessa = new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          reject(new Error("Este navegador não suporta IndexedDB."));
+          return;
+        }
+        const req = indexedDB.open(ANEXOS_DB, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(ANEXOS_STORE)) {
+            const store = db.createObjectStore(ANEXOS_STORE, { keyPath: "id" });
+            store.createIndex("clienteId", "clienteId", { unique: false });
+          }
+        };
+        req.onsuccess = () => {
+          const db = req.result;
+          // Sem isto, um upgrade futuro do esquema ficava bloqueado para
+          // sempre enquanto este separador estivesse aberto.
+          db.onversionchange = () => db.close();
+          resolve(db);
+        };
+        req.onerror = () => reject(req.error || new Error("Falha ao abrir a base de anexos."));
+        req.onblocked = () => reject(new Error("A base de anexos está bloqueada por outro separador do sistema."));
+      }).catch((e) => {
+        // Permite nova tentativa em vez de ficar com a Promise rejeitada em cache.
+        anexosDbPromessa = null;
+        throw e;
+      });
+
+      return anexosDbPromessa;
+    }
+
+    function transacaoAnexos(mode, accao) {
+      return abrirBancoAnexos().then(db => new Promise((resolve, reject) => {
+        let req = null;
+        const tx = db.transaction(ANEXOS_STORE, mode);
+        try {
+          req = accao(tx.objectStore(ANEXOS_STORE));
+        } catch (e) {
+          try { tx.abort(); } catch (_) {}
+          reject(e);
+          return;
+        }
+        tx.oncomplete = () => resolve(req ? req.result : undefined);
+        tx.onerror = () => reject(tx.error || new Error("Falha na base de dados de anexos."));
+        tx.onabort = () => reject(tx.error || new Error("Operação de anexo cancelada."));
+      }));
+    }
+
+    const gravarBlobAnexo = (registo) => transacaoAnexos("readwrite", s => s.put(registo));
+    const lerBlobAnexo = (id) => transacaoAnexos("readonly", s => s.get(id));
+    const apagarBlobAnexo = (id) => transacaoAnexos("readwrite", s => s.delete(id));
+    const contarBlobsAnexo = () => transacaoAnexos("readonly", s => s.count());
+    const listarIdsAnexo = () => transacaoAnexos("readonly", s => s.getAllKeys());
+
+    function gerarIdAnexo() {
+      if (window.crypto && typeof crypto.randomUUID === "function") return "anx_" + crypto.randomUUID();
+      return "anx_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 10);
+    }
+
+    function dataUrlParaBlob(dataUrl) {
+      const corte = dataUrl.indexOf(",");
+      if (corte === -1) throw new Error("Data URL inválida.");
+      const cabecalho = dataUrl.slice(0, corte);
+      const tipo = (cabecalho.match(/^data:([^;,]+)/) || [])[1] || "application/octet-stream";
+      const corpo = dataUrl.slice(corte + 1);
+
+      if (!/;base64/i.test(cabecalho)) {
+        return new Blob([decodeURIComponent(corpo)], { type: tipo });
+      }
+
+      const binario = atob(corpo);
+      const bytes = new Uint8Array(binario.length);
+      for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+      return new Blob([bytes], { type: tipo });
+    }
+
+    /* ============== CÓPIA DE SEGURANÇA E RESTAURAÇÃO ==============
+       O localStorage e o IndexedDB são por origem e por perfil de
+       navegador: nada disto aparece num outro telemóvel ou noutro
+       computador, mesmo que ambos tenham acesso ao mesmo ficheiro HTML.
+       Para o trabalho viajar é preciso extraí-lo para um ficheiro e
+       voltá-lo a pôr no destino.
+
+       O ficheiro é um JSON único que leva o estado completo e as mídias
+       dos anexos em base64. É deliberadamente um só ficheiro: assim
+       basta passar um anexo por e-mail/Telegram/pendrive sem poder
+       perder a correspondência entre o manifesto e as fotos.
+       ============================================================= */
+
+    const BACKUP_FORMATO = "rotta_orcamentos_backup";
+    const BACKUP_VERSAO = 1;
+    const MARCA_BACKUP_RESTAURO = "rotta_backup_restaurado";
+    // Acima disto o ficheiro fica difícil de gerar, enviar e abrir noutro
+    // aparelho, por isso avisa-se antes de o criar.
+    const LIMITE_AVISO_BACKUP = 60 * 1024 * 1024;
+
+    let restauracaoEmCurso = false;
+
+    const listarTodosAnexos = () => transacaoAnexos("readonly", s => s.getAll());
+    const limparAnexos = () => transacaoAnexos("readwrite", s => s.clear());
+
+    function blobParaBase64(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const resultado = String(reader.result || "");
+          const corte = resultado.indexOf(",");
+          resolve(corte === -1 ? resultado : resultado.slice(corte + 1));
+        };
+        reader.onerror = () => reject(reader.error || new Error("Falha ao ler o anexo."));
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function base64ParaBlob(base64, tipo) {
+      return dataUrlParaBlob(`data:${tipo || "application/octet-stream"};base64,${base64}`);
+    }
+
+    function carimboDataHora() {
+      const agora = new Date();
+      const p = (n, l) => String(n).padStart(l || 2, "0");
+      return `${agora.getFullYear()}${p(agora.getMonth() + 1)}${p(agora.getDate())}` +
+             `-${p(agora.getHours())}${p(agora.getMinutes())}`;
+    }
+
+    async function exportarBackup() {
+      let anexos = [];
+      let anexosIndisponiveis = false;
+      try {
+        anexos = (await listarTodosAnexos()) || [];
+      } catch (e) {
+        console.warn("Anexos indisponíveis para a cópia de segurança:", e);
+        anexosIndisponiveis = true;
+      }
+
+      const totalBytes = anexos.reduce(
+        (soma, a) => soma + (Number(a.tamanho) || (a.blob ? a.blob.size : 0) || 0), 0
+      );
+
+      if (!anexosIndisponiveis && totalBytes > LIMITE_AVISO_BACKUP) {
+        const continuar = confirm(
+          `A cópia de segurança vai incluir ${anexos.length} anexo(s), ${formatarBytes(totalBytes)}.\n\n` +
+          `O base64 acrescenta cerca de um terço, por isso o ficheiro final ficará perto de ` +
+          `${formatarBytes(Math.round(totalBytes * 1.34))}. Pode ser lento para gerar, lento para enviar ` +
+          `e difícil de abrir noutro aparelho com pouca espaço.\n\n` +
+          `Continuar mesmo assim?`
+        );
+        if (!continuar) return;
+      }
+
+      const botao = document.getElementById("btn-exportar-backup");
+      if (botao) botao.disabled = true;
+
+      try {
+        showToast("A preparar a cópia de segurança...", "info");
+        const total = anexos.length;
+        const anexosBase64 = [];
+        let feitos = 0;
+
+        for (const registo of anexos) {
+          if (registo && registo.blob) {
+            try {
+              anexosBase64.push({
+                id: registo.id,
+                clienteId: registo.clienteId === undefined ? null : registo.clienteId,
+                nome: registo.nome || "anexo",
+                tipo: registo.tipo || registo.blob.type || "application/octet-stream",
+                tamanho: Number(registo.tamanho) || registo.blob.size,
+                criadoEm: Number(registo.criadoEm) || Date.now(),
+                base64: await blobParaBase64(registo.blob)
+              });
+            } catch (e) {
+              console.warn("Anexo excluído da cópia de segurança:", registo.nome, e);
+            }
+          }
+          feitos++;
+          // O base64 de cada foto é um trabalho pesado e bloqueante: sem
+          // ceder o event loop a interface fica congelada durante minutos.
+          if (total > 3 && feitos % 3 === 0) {
+            showToast(`A copiar anexos... ${feitos} de ${total}`, "info");
+            await new Promise(resolve => setTimeout(resolve, 0));
+          }
+        }
+
+        const envelope = {
+          formato: BACKUP_FORMATO,
+          versao: BACKUP_VERSAO,
+          geradoEm: new Date().toISOString(),
+          origem: "Rotta Design - Sistema Profissional de Orçamentos",
+          totalClientes: AppState.clientes.length,
+          totalAgenda: AppState.agenda.length,
+          totalFinanceiro: AppState.financeiro.length,
+          totalAnexos: anexosBase64.length,
+          anexosIndisponiveis: anexosIndisponiveis,
+          estado: JSON.parse(JSON.stringify(AppState)),
+          anexos: anexosBase64
+        };
+
+        showToast("A gerar o ficheiro...", "info");
+        const blob = new Blob([JSON.stringify(envelope)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `Rotta_Backup_${carimboDataHora()}${anexosIndisponiveis ? "-SEM-ANEXOS" : ""}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        // Só se pode libertar depois de o browser ter lido o ficheiro.
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+
+        const mensagem = anexosIndisponiveis
+          ? "Cópia de segurança SEM as fotos: a base de anexos está indisponível neste navegador."
+          : `Cópia de segurança guardada (${formatarBytes(blob.size)}). Guarde-a fora deste aparelho.`;
+        if (anexosIndisponiveis) mostrarAviso(mensagem);
+        showToast(mensagem, anexosIndisponiveis ? "warning" : "success");
+      } catch (e) {
+        console.error("Falha ao gerar a cópia de segurança:", e);
+        showToast("Não foi possível gerar a cópia de segurança.", "error");
+      } finally {
+        if (botao) botao.disabled = false;
+      }
+    }
+
+    async function importarBackup(event) {
+      const input = event && event.target;
+      const file = input && input.files ? input.files[0] : null;
+      if (input) input.value = "";   // permite reimportar o mesmo ficheiro depois
+      if (!file) return;
+      if (restauracaoEmCurso) {
+        showToast("Já está a decorrer uma restauração. Aguarde.", "warning");
+        return;
+      }
+
+      let envelope;
+      try {
+        envelope = JSON.parse(await file.text());
+      } catch (e) {
+        console.error("Cópia de segurança ilegível:", e);
+        showToast("O ficheiro não é uma cópia de segurança válida.", "error");
+        return;
+      }
+
+      if (!envelope || envelope.formato !== BACKUP_FORMATO) {
+        showToast("Este ficheiro não é uma cópia de segurança deste sistema.", "error");
+        return;
+      }
+      if (Number(envelope.versao) > BACKUP_VERSAO) {
+        showToast("A cópia foi criada por uma versão mais recente da aplicação. Atualize a página antes de a restaurar.", "error");
+        return;
+      }
+
+      const novo = normalizarEstado(envelope.estado);
+      const nClientes = novo.clientes.length;
+      const nAgenda = novo.agenda.length;
+      const nFinanceiro = novo.financeiro.length;
+      const nAnexos = Array.isArray(envelope.anexos) ? envelope.anexos.length : 0;
+
+      const aPerder = [
+        `${AppState.clientes.length} cliente(s)`,
+        `${AppState.agenda.length} agendamento(s)`,
+        `${AppState.financeiro.length} lançamento(s) financeiro(s)`
+      ].join(", ");
+
+      let quando = "data desconhecida";
+      if (envelope.geradoEm) {
+        const d = new Date(envelope.geradoEm);
+        if (!isNaN(d.getTime())) quando = d.toLocaleString("pt-BR");
+      }
+
+      const confirmar = confirm(
+        `Cópia de segurança de ${quando}\n\n` +
+        `Vai restaurar para este aparelho:\n` +
+        `  • ${nClientes} cliente(s)\n` +
+        `  • ${nAgenda} agendamento(s)\n` +
+        `  • ${nFinanceiro} lançamento(s) financeiro(s)\n` +
+        `  • ${nAnexos} anexo(s) de mídia\n\n` +
+        `Isto SUBSTITUI tudo o que está guardado aqui agora (${aPerder}` +
+        `${nAnexos > 0 ? " e os anexos existentes" : ""}).\n\n` +
+        `Não é possível desfazer. Continuar?`
+      );
+      if (!confirmar) return;
+
+      restauracaoEmCurso = true;
+      showToast("A restaurar. Não feche a página...", "info");
+
+      let anexosRestaurados = 0;
+      let falhasAnexo = 0;
+
+      try {
+        // A base de anexos é reescrita por inteiro: caso contrário os blobs
+        // que já existiam neste aparelho ficariam órfãos e continuariam a
+        // ocupar espaço para sempre.
+        if (window.indexedDB) {
+          try {
+            await limparAnexos();
+            for (const item of (envelope.anexos || [])) {
+              if (!item || !item.id || !item.base64) { falhasAnexo++; continue; }
+              try {
+                const blob = base64ParaBlob(item.base64, item.tipo);
+                await gravarBlobAnexo({
+                  id: item.id,
+                  clienteId: item.clienteId === undefined ? null : item.clienteId,
+                  nome: item.nome || "anexo",
+                  tipo: item.tipo || blob.type,
+                  tamanho: Number(item.tamanho) || blob.size,
+                  criadoEm: Number(item.criadoEm) || Date.now(),
+                  blob: blob
+                });
+                anexosRestaurados++;
+              } catch (e) {
+                console.warn("Anexo não restaurado:", item && item.nome, e);
+                falhasAnexo++;
+              }
+            }
+          } catch (e) {
+            console.error("Falha ao reescrever a base de anexos:", e);
+            mostrarAviso(
+              "A base de anexos não pôde ser reescrita neste navegador. Os dados foram restaurados, " +
+              "mas as fotos podem não ter sido importadas."
+            );
+            falhasAnexo += nAnexos;
+          }
+        } else if (nAnexos > 0) {
+          mostrarAviso(
+            "Este navegador não suporta IndexedDB, por isso as fotos da cópia de segurança " +
+            "não puderam ser restauradas. Os restantes dados foram importados."
+          );
+          falhasAnexo = nAnexos;
+        }
+
+        AppState = novo;
+        garantirSequenciaId();
+        salvarEstadoGeral();
+
+        // As miniaturas em cache apontam para blobs que deixaram de existir.
+        cacheThumbAnexos.forEach(url => { try { URL.revokeObjectURL(url); } catch (_) {} });
+        cacheThumbAnexos.clear();
+
+        try {
+          sessionStorage.setItem(MARCA_BACKUP_RESTAURO, JSON.stringify({
+            clientes: nClientes, anexos: anexosRestaurados, falhas: falhasAnexo
+          }));
+        } catch (e) {
+          // Modo privado pode bloquear o sessionStorage: segue-se sem o
+          // resumo pós-restauração, os dados já estão gravados.
+        }
+
+        showToast("Cópia restaurada. A recarregar...", "success");
+        // A guarda só existe para impedir duas restaurações em paralelo.
+        // Se a recarga não chegar a acontecer (bfcache, por exemplo), ficar
+        // com a flag ligada bloqueava todas as restaurações seguintes.
+        restauracaoEmCurso = false;
+        // Recarregar é a forma mais fiável de a interface ficar coerente com
+        // o estado novo: selects, métricas, miniaturas e separadores.
+        setTimeout(() => location.reload(), 900);
+      } catch (e) {
+        console.error("Falha ao restaurar a cópia de segurança:", e);
+        showToast("Não foi possível restaurar a cópia de segurança.", "error");
+        restauracaoEmCurso = false;
+      }
+    }
+
+    function obterClientePorId(id) {
+      // O value de um <select> é sempre string, enquanto os IDs são números.
+      // Comparar com === strict deixava a selecção do cliente sem efeito.
+      if (id === null || id === undefined || id === "") return null;
+      const alvo = String(id);
+      return AppState.clientes.find(c => c && String(c.id) === alvo) || null;
+    }
+
+    function revogarThumbAnexo(id) {
+      const url = cacheThumbAnexos.get(id);
+      if (url) {
+        URL.revokeObjectURL(url);
+        cacheThumbAnexos.delete(id);
+      }
+    }
+
+    function seletorSeguro(valor) {
+      return (window.CSS && typeof CSS.escape === "function") ? CSS.escape(valor) : valor;
+    }
+
+    function abrirModalAnexos(clienteId) {
+      const cli = obterClientePorId(clienteId);
+      if (!cli) return;
+
+      clienteParaAnexosId = clienteId;
+      document.getElementById("modal-anexos-titulo").innerText = `Mídias: ${cli.nome}`;
+      document.getElementById("modal-anexos").classList.remove("hidden");
+      renderizarListaAnexosModal();
+    }
+
+    function fecharModalAnexos() {
+      document.getElementById("modal-anexos").classList.add("hidden");
+      clienteParaAnexosId = null;
+      cacheThumbAnexos.forEach(url => URL.revokeObjectURL(url));
+      cacheThumbAnexos.clear();
+    }
+
+    function construirLinhaAnexo(cli, arq, index) {
+      const itemDiv = document.createElement("div");
+      itemDiv.className = "flex items-center justify-between gap-2 p-2 bg-white rounded border border-stone-200";
+
+      const ehObjeto = arq && typeof arq === "object";
+      const nome = ehObjeto ? (arq.nome || "anexo") : String(arq);
+      const id = ehObjeto ? arq.id : null;
+      const tamanho = ehObjeto ? arq.tamanho : null;
+      const ehImagem = ehObjeto && /^image\//i.test(arq.tipo || "");
+
+      itemDiv.innerHTML = `
+        <div class="flex items-center gap-2 overflow-hidden min-w-0">
+          <span data-thumb="${escapeHtml(id || "")}" class="w-9 h-9 shrink-0 rounded border border-stone-200 bg-stone-100 flex items-center justify-center overflow-hidden">
+            <i class="fa-solid ${ehImagem ? "fa-image text-stone-400" : "fa-file text-brand-orange"}"></i>
+          </span>
+          <div class="min-w-0">
+            <div class="truncate font-medium text-stone-700 max-w-[220px]" title="${escapeHtml(nome)}">${escapeHtml(nome)}</div>
+            ${tamanho != null ? `<div class="text-[10px] text-stone-400 font-mono">${escapeHtml(formatarBytes(tamanho))}</div>` : ""}
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          ${id ? `<button onclick="abrirAnexo('${escapeHtml(id)}')" class="text-xs text-blue-600 hover:underline font-semibold">Abrir</button>` : ""}
+          <button onclick="removerAnexo(${index})" class="text-xs text-red-500 hover:text-red-700" title="Remover"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      `;
+
+      return itemDiv;
+    }
+
+    async function preencherMiniaturaAnexo(arq) {
+      if (!arq || !arq.id || !/^image\//i.test(arq.tipo || "")) return;
+      if (cacheThumbAnexos.has(arq.id)) return;
+
+      try {
+        const registo = await lerBlobAnexo(arq.id);
+        if (!registo || !registo.blob) return;
+
+        const url = URL.createObjectURL(registo.blob);
+        cacheThumbAnexos.set(arq.id, url);
+        document.querySelectorAll(`[data-thumb="${seletorSeguro(arq.id)}"]`).forEach(span => {
+          span.innerHTML = `<img src="${url}" alt="" class="w-full h-full object-cover">`;
+        });
+      } catch (e) {
+        console.error("Falha ao gerar miniatura do anexo:", e);
+      }
+    }
+
+    async function renderizarListaAnexosModal() {
+      const cli = obterClientePorId(clienteParaAnexosId);
+      const listaDiv = document.getElementById("modal-anexos-lista");
+      if (!listaDiv) return;
+
+      listaDiv.innerHTML = "";
+
+      if (!cli || !Array.isArray(cli.arquivos) || cli.arquivos.length === 0) {
+        listaDiv.innerHTML = `<p class="text-stone-400 p-2 italic text-center">Nenhum arquivo ou foto anexada para este cliente.</p>`;
+        return;
+      }
+
+      const manifesto = cli.arquivos.slice();
+      manifesto.forEach((arq, index) => listaDiv.appendChild(construirLinhaAnexo(cli, arq, index)));
+
+      // Miniaturas carregam em segundo plano para não travar a listagem.
+      for (const arq of manifesto) {
+        await preencherMiniaturaAnexo(arq);
+      }
+    }
+
+    async function anexarArquivosAoCliente(files) {
+      const cli = obterClientePorId(clienteParaAnexosId);
+      if (!cli) {
+        showToast("Cliente inválido para anexos.", "error");
+        return;
+      }
+      if (!Array.isArray(cli.arquivos)) cli.arquivos = [];
+
+      let gravados = 0;
+      const falhas = [];
+
+      for (const file of files) {
+        const id = gerarIdAnexo();
+        const registo = {
+          id,
+          clienteId: cli.id,
+          nome: file.name || "anexo",
+          tipo: file.type || "application/octet-stream",
+          tamanho: file.size,
+          criadoEm: Date.now(),
+          blob: file
+        };
+
+        try {
+          await gravarBlobAnexo(registo);
+          cli.arquivos.push({
+            id: registo.id,
+            nome: registo.nome,
+            tipo: registo.tipo,
+            tamanho: registo.tamanho,
+            criadoEm: registo.criadoEm
+          });
+          gravados++;
+        } catch (e) {
+          falhas.push(file.name);
+          console.error("Falha ao gravar anexo:", e);
+        }
+      }
+
+      const gravado = salvarEstadoGeral();
+      await renderizarListaAnexosModal();
+      renderizarTabelaClientes();
+
+      if (gravados > 0 && falhas.length === 0) {
+        if (gravado) showToast(`${gravados} arquivo(s) anexado(s) com sucesso!`);
+      } else if (gravados > 0) {        mostrarAviso(
+          `${gravados} anexo(s) foram gravados, mas ${falhas.length} falharam: ${falhas.slice(0, 3).join(", ")}. ` +
+          "A base de dados de anexos pode estar cheia ou o ficheiro ser demasiado grande."
+        );
+        showToast(`${gravados} anexo(s) anexado(s), com falhas.`, "warning");
+      } else {
+        mostrarAviso(
+          "Nenhum ficheiro foi anexado. A base de dados local de anexos pode estar cheia, indisponível ou bloqueada. " +
+          "Feche outras separadores desta aplicação e tente novamente."
+        );
+        showToast("Não foi possível anexar os arquivos.", "error");
+      }
+    }
+
+    async function abrirAnexo(id) {
+      try {
+        const registo = await lerBlobAnexo(id);
+        if (!registo || !registo.blob) {
+          showToast("Arquivo não encontrado na base de dados de anexos.", "warning");
+          return;
+        }
+
+        const url = URL.createObjectURL(registo.blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = registo.nome || "anexo";
+        link.rel = "noopener";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      } catch (e) {
+        console.error("Falha ao abrir anexo:", e);
+        showToast("Erro ao abrir o anexo.", "error");
+      }
+    }
+
+    async function apagarAnexosDoCliente(clienteId, manifesto) {
+      const ids = (manifesto || [])
+        .filter(a => a && typeof a === "object" && a.id)
+        .map(a => a.id);
+
+      for (const id of ids) {
+        revogarThumbAnexo(id);
+        try {
+          await apagarBlobAnexo(id);
+        } catch (e) {
+          console.error(`Falha ao apagar anexo ${id} do cliente ${clienteId}:`, e);
+        }
+      }
+    }
+
+    // Elimina da base de anexos os ficheiros que já não pertencem a nenhum
+    // cliente (ex.: órfãos deixados pelo estado de demonstração anterior).
+    // Só apaga o que não está referenciado, por isso nunca toca em anexos reais.
+    async function limparAnexosOrfaos() {
+      const emUso = new Set();
+      (AppState.clientes || []).forEach(c => {
+        (c.arquivos || []).forEach(a => {
+          if (a && typeof a === "object" && a.id) emUso.add(a.id);
+        });
+      });
+
+      let orfaos = [];
+      try {
+        const todos = await listarIdsAnexo();
+        orfaos = todos.filter(id => !emUso.has(id));
+      } catch (e) {
+        console.warn("Não foi possível listar os anexos existentes:", e);
+        return 0;
+      }
+
+      for (const id of orfaos) {
+        revogarThumbAnexo(id);
+        try {
+          await apagarBlobAnexo(id);
+        } catch (e) {
+          console.warn("Não foi possível apagar o anexo órfão " + id + ":", e);
+        }
+      }
+
+      if (orfaos.length) console.info(orfaos.length + " anexo(s) sem dono removido(s) da base.");
+      return orfaos.length;
+    }
+
+    async function removerAnexo(index) {
+      const cli = obterClientePorId(clienteParaAnexosId);
+      if (!cli || !Array.isArray(cli.arquivos)) return;
+
+      const arq = cli.arquivos[index];
+      if (!arq) return;
+
+      const nome = (arq && typeof arq === "object" ? arq.nome : null) || "anexo";
+      if (!confirm(`Remover o anexo "${nome}" deste cliente?`)) return;
+
+      if (arq && typeof arq === "object" && arq.id) {
+        revogarThumbAnexo(arq.id);
+        try {
+          await apagarBlobAnexo(arq.id);
+        } catch (e) {
+          console.error("Falha ao apagar o conteúdo do anexo:", e);
+        }
+      }
+
+      cli.arquivos.splice(index, 1);
+      await renderizarListaAnexosModal();
+      renderizarTabelaClientes();
+      confirmarGravacao("Anexo removido.");
+    }
+
+    // Listener para upload de arquivos no modal
+    document.getElementById("modal-upload-input")?.addEventListener("change", function(e) {
+      const files = Array.from(e.target.files || []);
+      e.target.value = "";
+      if (!files.length) return;
+      anexarArquivosAoCliente(files);
+    });
+
+    /* Migração única: anexos antigos gravados em base64 dentro do localStorage
+       são movidos para o IndexedDB, libertando a cota e preservando as mídias. */
+    async function migrarAnexosLegados() {
+      let migrados = 0;
+      const falhas = [];
+
+      for (const cli of AppState.clientes) {
+        if (!Array.isArray(cli.arquivos) || cli.arquivos.length === 0) continue;
+
+        const manifesto = [];
+        let houveMudanca = false;
+
+        for (const arq of cli.arquivos) {
+          if (arq && typeof arq === "object" && arq.id) {
+            manifesto.push(arq);
+            continue;
+          }
+
+          if (arq && typeof arq === "object" && typeof arq.url === "string" && arq.url.startsWith("data:")) {
+            try {
+              const blob = dataUrlParaBlob(arq.url);
+              const id = gerarIdAnexo();
+              const nome = arq.nome || "anexo";
+              const tipo = blob.type || arq.tipo || "application/octet-stream";
+              const criadoEm = Date.now();
+
+              await gravarBlobAnexo({ id, clienteId: cli.id, nome, tipo, tamanho: blob.size, criadoEm, blob });
+              manifesto.push({ id, nome, tipo, tamanho: blob.size, criadoEm });
+              migrados++;
+              houveMudanca = true;
+              continue;
+            } catch (e) {
+              falhas.push(arq.nome || "anexo");
+              console.error("Falha ao migrar anexo legado:", e);
+            }
+          }
+
+          // Formato desconhecido: preserva a entrada para não perder informação.
+          manifesto.push(arq);
+        }
+
+        if (houveMudanca) cli.arquivos = manifesto;
+      }
+
+      if (migrados > 0) {
+        if (salvarEstadoGeral()) {
+          showToast(`${migrados} anexo(s) antigo(s) migrado(s) para a base de dados local.`);
+        }
+      }
+
+      if (falhas.length > 0) {
+        mostrarAviso(
+          `Não foi possível migrar ${falhas.length} anexo(s) antigo(s) (${falhas.slice(0, 3).join(", ")}). ` +
+          "Continuam listados, mas podem não abrir — anexe-os novamente."
+        );
+      }
+
+      return migrados;
+    }
+
+
+    /* CSV Import & Export com separador ';' conforme o código Python */
+    function exportarCSV() {
+      if (!AppState.clientes.length) {
+        showToast("Não existem clientes registados para exportar.", "warning");
+        return;
+      }
+
+      let csvContent = "\uFEFFID;Nome do Cliente;Morada;Telefone;Qtd Mídias Anexadas\r\n";
+      AppState.clientes.forEach(c => {
+        const linha = [
+          c.id,
+          `"${(c.nome || '').replace(/"/g, '""')}"`,
+          `"${(c.endereco || '').replace(/"/g, '""')}"`,
+          `"${(c.telefone || '').replace(/"/g, '""')}"`,
+          (c.arquivos || []).length
+        ].join(";");
+        csvContent += linha + "\r\n";
+      });
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const d = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Clientes_Rotta_${d}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast("Planilha CSV exportada!");
+    }
+
+    /* Divide uma linha de CSV em campos, respeitando as aspas.
+       Um split() simples partia a meio as moradas como "Rua; 25, Lisboa" e
+       fazia a exportação seguida de importação perder dados. */
+    function separarLinhaCSV(linha, delimitador) {
+      const campos = [];
+      let atual = "";
+      let dentroDeAspas = false;
+
+      for (let i = 0; i < linha.length; i++) {
+        const c = linha[i];
+        if (dentroDeAspas) {
+          if (c === '"') {
+            if (linha[i + 1] === '"') { atual += '"'; i++; }
+            else dentroDeAspas = false;
+          } else {
+            atual += c;
+          }
+        } else if (c === '"') {
+          dentroDeAspas = true;
+        } else if (c === delimitador) {
+          campos.push(atual.trim());
+          atual = "";
+        } else {
+          atual += c;
+        }
+      }
+      campos.push(atual.trim());
+      return campos;
+    }
+
+    function importarCSV(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const texto = String(e.target.result).replace(/^\uFEFF/, "");
+          const linhas = texto.split(/\r\n|\n/).filter(l => l.trim().length > 0);
+          if (linhas.length <= 1) {
+            showToast("Arquivo CSV vazio ou sem cabeçalho.", "warning");
+            return;
+          }
+
+          const delimitador = linhas[0].includes(";") ? ";" : ",";
+          const cabecalho = separarLinhaCSV(linhas[0], delimitador).map(h => h.toLowerCase());
+
+          let idxNome = cabecalho.findIndex(h => h.includes("nome"));
+          let idxEnd = cabecalho.findIndex(h => h.includes("morada") || h.includes("endereço") || h.includes("endereco"));
+          let idxTel = cabecalho.findIndex(h => h.includes("telefone") || h.includes("telemovel") || h.includes("telemóvel"));
+
+          if (idxNome === -1) idxNome = 1;
+
+          let importados = 0;
+          let duplicados = 0;
+
+          for (let i = 1; i < linhas.length; i++) {
+            const cols = separarLinhaCSV(linhas[i], delimitador);
+            const nome = (cols[idxNome] || "").trim();
+            if (!nome) continue;
+
+            // Importar o mesmo ficheiro duas vezes duplicava a lista toda.
+            const jaExiste = AppState.clientes.some(
+              c => c.nome.toLowerCase() === nome.toLowerCase()
+            );
+            if (jaExiste) { duplicados++; continue; }
+
+            AppState.clientes.push({
+              id: gerarId(),
+              nome: nome,
+              endereco: idxEnd !== -1 && cols[idxEnd] ? cols[idxEnd].trim() : "",
+              telefone: idxTel !== -1 && cols[idxTel] ? cols[idxTel].trim() : "",
+              arquivos: []
+            });
+            importados++;
+          }
+
+          renderizarTabelaClientes();
+
+          if (importados > 0) {
+            const extra = duplicados > 0
+              ? ` ${duplicados} já existia(m) e não foi importado(s) outra vez.`
+              : "";
+            confirmarGravacao(`Sucesso! ${importados} cliente(s) importado(s).${extra}`);
+          } else if (duplicados > 0) {
+            showToast("Nenhum cliente novo: todos os nomes do ficheiro já existiam.", "warning");
+          } else {
+            showToast("Nenhuma linha válida encontrada no arquivo CSV.", "warning");
+          }
+        } catch (err) {
+          console.error("Falha ao importar CSV:", err);
+          showToast("Erro ao processar o arquivo CSV.", "error");
+        }
+      };
+      reader.readAsText(file, "UTF-8");
+      event.target.value = "";
+    }
+
+    function renderizarTabelaAgenda() {
+      const tbody = document.getElementById("tabela-agenda-corpo");
+      tbody.innerHTML = "";
+
+      document.getElementById("agenda-contador").innerText = `${AppState.agenda.length} agendamento(s)`;
+
+      AppState.agenda.forEach(item => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-amber-50/60 transition";
+        const isConcluido = item.status === "Concluído";
+
+        // O nome vem do cliente ligado por ID; o campo `cliente` guardado no
+        // agendamento é apenas a cópia de texto para agendamentos avulsos
+        // (e para o caso de o cliente ter sido entretanto excluído).
+        const porId = obterClientePorId(item.clienteId);
+        const nomeCliente = (porId && porId.nome) || item.cliente || "";
+
+        tr.innerHTML = `
+          <td class="col-oculta p-2.5 text-center font-mono text-stone-500" data-label="ID">${item.id}</td>
+          <td class="td-titulo p-2.5 font-bold text-stone-800" data-label="Cliente">${escapeHtml(nomeCliente)}</td>
+          <td class="p-2.5 font-mono text-stone-700 whitespace-nowrap" data-label="Data/Hora">${escapeHtml(item.dataHora)}</td>
+          <td class="p-2.5 text-stone-700" data-label="Descrição">${escapeHtml(item.descricao)}</td>
+          <td class="p-2.5 text-center" data-label="Estado">
+            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold ${isConcluido ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
+              ${escapeHtml(item.status)}
+            </span>
+          </td>
+          <td class="td-acoes p-2.5 text-center whitespace-nowrap" data-label="Ações">
+            <div class="flex items-center justify-center gap-1">
+              ${isConcluido 
+                ? `<button onclick="alterarStatusAgenda(${item.id}, 'Pendente')" title="Marcar como Pendente" class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-stone-800 rounded text-xs"><i class="fa-solid fa-clock-rotate-left"></i> Pendente</button>`
+                : `<button onclick="alterarStatusAgenda(${item.id}, 'Concluído')" title="Marcar como Concluído" class="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-900 rounded text-xs font-bold"><i class="fa-solid fa-check"></i> Concluir</button>`
+              }
+              <button onclick="excluirAgenda(${item.id})" title="Excluir" class="btn-icone p-1 rounded text-red-500 hover:bg-red-50"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function adicionarAgendamento() {
+      const selAgenda = document.getElementById("agenda-cliente-select");
+      const clienteEscolhido = selAgenda ? obterClientePorId(selAgenda.value) : null;
+      const cliAvulso = document.getElementById("agenda-cliente-avulso").value.trim();
+      const dataStr = document.getElementById("agenda-data").value.trim();
+      const horaStr = document.getElementById("agenda-hora").value.trim();
+      const desc = document.getElementById("agenda-desc").value.trim();
+
+      // A agenda guarda o cliente pelo ID, não pelo nome: dois clientes
+      // homónimos deixavam o agendamento ligado ao registo errado.
+      const nomeClienteFinal = (clienteEscolhido && clienteEscolhido.nome) || cliAvulso || "Cliente Avulso";
+
+      if (!dataStr || !horaStr || !desc) {
+        showToast("Preencha data, horário e descrição.", "warning");
+        return;
+      }
+
+      // Validação formato DD-MM-AAAA
+      const partes = dataStr.split("-");
+      if (partes.length !== 3 || partes[0].length !== 2 || partes[1].length !== 2 || partes[2].length !== 4) {
+        showToast("Formato de data inválido. Use DD-MM-AAAA (ex: 25-12-2026).", "warning");
+        return;
+      }
+      if (!/^\d{2}-\d{2}-\d{4}$/.test(dataStr)) {
+        showToast("A data só pode conter números. Use DD-MM-AAAA (ex: 25-12-2026).", "warning");
+        return;
+      }
+      const mes = Number(partes[1]);
+      if (mes < 1 || mes > 12) {
+        showToast("Mês inválido. Use um valor de 01 a 12.", "warning");
+        return;
+      }
+      if (!/^\d{2}:\d{2}$/.test(horaStr)) {
+        showToast("Horário inválido. Use HH:MM (ex: 09:30).", "warning");
+        return;
+      }
+      const hora = Number(horaStr.slice(0, 2));
+      const minuto = Number(horaStr.slice(3, 5));
+      if (hora > 23 || minuto > 59) {
+        showToast("Horário fora do intervalo válido (00:00 a 23:59).", "warning");
+        return;
+      }
+
+      AppState.agenda.unshift({
+        id: gerarId(),
+        clienteId: clienteEscolhido ? clienteEscolhido.id : null,
+        cliente: nomeClienteFinal,
+        dataHora: `${dataStr} ${horaStr}`,
+        descricao: desc,
+        status: "Pendente"
+      });
+      renderizarTabelaAgenda();
+
+      document.getElementById("agenda-desc").value = "";
+      document.getElementById("agenda-cliente-avulso").value = "";
+      confirmarGravacao("Compromisso agendado com sucesso!");
+    }
+
+    function alterarStatusAgenda(id, novoStatus) {
+      const item = AppState.agenda.find(a => mesmoId(a.id, id));
+      if (item) {
+        item.status = novoStatus;
+        renderizarTabelaAgenda();
+        confirmarGravacao(`Status alterado para "${novoStatus}"`);
+      }
+    }
+
+    function excluirAgenda(id) {
+      if (confirm("Deseja realmente excluir este agendamento?")) {
+        AppState.agenda = AppState.agenda.filter(a => !mesmoId(a.id, id));
+        renderizarTabelaAgenda();
+        confirmarGravacao("Agendamento excluído.");
+      }
+    }
+
+    function renderizarTabelaFinanceiro() {
+      const tbody = document.getElementById("tabela-fin-corpo");
+      tbody.innerHTML = "";
+
+      let totalRecebido = 0;
+      let totalFiado = 0;
+
+      AppState.financeiro.forEach(f => {
+        const val = parseFloat(f.valor) || 0;
+        if (f.formaPagamento === "A Pagar / Fiado") {
+          totalFiado += val;
+        } else {
+          totalRecebido += val;
+        }
+
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-amber-50/60 transition";
+        tr.innerHTML = `
+          <td class="col-oculta p-2.5 text-center font-mono text-stone-500" data-label="ID">${f.id}</td>
+          <td class="td-titulo p-2.5 font-bold text-stone-800" data-label="Cliente">${escapeHtml(f.cliente)}</td>
+          <td class="p-2.5 text-stone-700" data-label="Serviço">${escapeHtml(f.servico)}</td>
+          <td class="p-2.5 text-right font-mono font-bold text-stone-900 whitespace-nowrap" data-label="Valor">R$ ${formatarMoeda(val)}</td>
+          <td class="p-2.5 text-center" data-label="Pagamento">
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold ${f.formaPagamento === 'A Pagar / Fiado' ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-700'}">
+              ${escapeHtml(f.formaPagamento)}
+            </span>
+          </td>
+          <td class="td-acoes p-2.5 text-center whitespace-nowrap" data-label="Ações">
+            <div class="flex items-center justify-center gap-1.5">
+              <button onclick="carregarFinanceiroParaEdicao(${f.id})" title="Editar" class="btn-icone p-1 rounded text-stone-600 hover:bg-stone-200"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="excluirFinanceiro(${f.id})" title="Excluir" class="btn-icone p-1 rounded text-red-500 hover:bg-red-50"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("fin-total-recebido").innerText = `R$ ${formatarMoeda(totalRecebido)}`;
+      document.getElementById("fin-total-fiado").innerText = `R$ ${formatarMoeda(totalFiado)}`;
+    }
+
+    function salvarFinanceiro() {
+      const cli = document.getElementById("fin-cliente").value.trim();
+      const serv = document.getElementById("fin-servico").value.trim();
+      const val = parseFloat(document.getElementById("fin-valor").value);
+      const forma = document.getElementById("fin-forma").value;
+
+      if (!cli || isNaN(val)) {
+        showToast("Preencha pelo menos o Nome do Cliente e o Valor!", "warning");
+        return;
+      }
+
+      if (financeiroEmEdicaoId !== null) {
+        const item = AppState.financeiro.find(f => f.id === financeiroEmEdicaoId);
+        if (item) {
+          item.cliente = cli;
+          item.servico = serv;
+          item.valor = val;
+          item.formaPagamento = forma;
+        }
+        cancelarEdicaoFinanceiro();
+        renderizarTabelaFinanceiro();
+        confirmarGravacao("Lançamento financeiro atualizado com sucesso!");
+        return;
+      }
+
+      AppState.financeiro.unshift({
+        id: gerarId(),
+        cliente: cli,
+        servico: serv,
+        valor: val,
+        formaPagamento: forma
+      });
+      limparFormFinanceiro();
+      renderizarTabelaFinanceiro();
+      confirmarGravacao("Lançamento adicionado ao histórico!");
+    }
+
+    function carregarFinanceiroParaEdicao(id) {
+      const f = AppState.financeiro.find(i => mesmoId(i.id, id));
+      if (!f) return;
+
+      financeiroEmEdicaoId = f.id;
+      document.getElementById("fin-cliente").value = f.cliente;
+      document.getElementById("fin-servico").value = f.servico;
+      document.getElementById("fin-valor").value = f.valor;
+      document.getElementById("fin-forma").value = f.formaPagamento;
+
+      document.getElementById("badge-fin-modo").classList.remove("hidden");
+      document.getElementById("btn-fin-salvar").innerText = "Atualizar Lançamento";
+      document.getElementById("btn-fin-cancelar").classList.remove("hidden");
+    }
+
+    function cancelarEdicaoFinanceiro() {
+      financeiroEmEdicaoId = null;
+      limparFormFinanceiro();
+      document.getElementById("badge-fin-modo").classList.add("hidden");
+      document.getElementById("btn-fin-salvar").innerText = "Salvar Lançamento no Histórico";
+      document.getElementById("btn-fin-cancelar").classList.add("hidden");
+    }
+
+    function limparFormFinanceiro() {
+      document.getElementById("fin-cliente").value = "";
+      document.getElementById("fin-servico").value = "";
+      document.getElementById("fin-valor").value = "";
+      document.getElementById("fin-forma").value = "Pix";
+    }
+
+    function excluirFinanceiro(id) {
+      if (confirm("Deseja realmente excluir este lançamento financeiro?")) {
+        AppState.financeiro = AppState.financeiro.filter(f => !mesmoId(f.id, id));
+        if (mesmoId(financeiroEmEdicaoId, id)) cancelarEdicaoFinanceiro();
+        renderizarTabelaFinanceiro();
+        confirmarGravacao("Lançamento excluído.");
+      }
+    }
+
+    const CONFIG_SETORES = [
+      { key: "Eletrica", id: "eletrica", nome: "Elétrica", icone: "fa-bolt", cor: "#F57C00" },
+      { key: "Seguranca", id: "seguranca", nome: "Segurança Eletrônica", icone: "fa-shield-halved", cor: "#D84315" },
+      { key: "Solar", id: "solar", nome: "Energia Solar", icone: "fa-sun", cor: "#FF8F00" }
+    ];
+
+    function montarAbasServicosDOM() {
+      CONFIG_SETORES.forEach(setor => {
+        const sec = document.getElementById(`aba-${setor.id}`);
+        if (!sec) return;
+
+        sec.innerHTML = `
+          <div class="bg-brand-lightCream border-2 border-brand-amber rounded-2xl p-5 shadow-sm space-y-4">
+            <!-- Dados do Cliente no Orçamento -->
+            <div class="bg-white p-4 rounded-xl border border-brand-amberSoft">
+              <h3 class="text-xs font-bold text-brand-deepOrange uppercase tracking-wider mb-2">Dados do Cliente para o Orçamento</h3>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-stone-700 mb-1">Cliente:</label>
+                  <select id="${setor.id}-cli-select" onchange="selecionarClienteParaOrcamento('${setor.id}')" class="w-full bg-stone-50 border border-stone-300 rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-brand-orange"></select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-stone-700 mb-1">Morada:</label>
+                  <input type="text" id="${setor.id}-cli-end" placeholder="Morada do cliente" class="w-full bg-stone-50 border border-stone-300 rounded-lg px-3 py-1.5 text-xs">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-stone-700 mb-1">Telefone:</label>
+                  <input type="text" id="${setor.id}-cli-tel" placeholder="Telefone do cliente" class="w-full bg-stone-50 border border-stone-300 rounded-lg px-3 py-1.5 text-xs">
+                </div>
+              </div>
+            </div>
+
+            <!-- Meio: Catálogo Sugerido (Esq) e Itens do Orçamento (Dir) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <!-- Catálogo Sugerido -->
+              <div class="lg:col-span-5 bg-white p-4 rounded-xl border border-stone-200 flex flex-col justify-between">
+                <div>
+                  <h3 class="text-xs font-bold text-brand-darkOrange uppercase tracking-wider mb-2 flex items-center justify-between">
+                    <span><i class="fa-solid ${setor.icone}"></i> Catálogo Sugerido</span>
+                    <span class="text-[10px] text-stone-500 font-normal">Duplo clique para adicionar</span>
+                  </h3>
+                  <div class="area-tabela overflow-y-auto max-h-60 border rounded-lg">
+                    <table class="tabela-resp w-full text-left text-xs border-collapse">
+                      <thead class="bg-amber-100 text-stone-800 sticky top-0">
+                        <tr>
+                          <th class="p-2">Descrição Sugerida</th>
+                          <th class="p-2 text-center">Unid</th>
+                          <th class="p-2 text-center">Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody id="catalogo-corpo-${setor.id}" class="divide-y divide-stone-100">
+                        <!-- Itens do Catálogo -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Input rápido de Qtd e Unit do Catálogo -->
+                <div class="mt-3 pt-3 border-t grid grid-cols-2 sm:flex sm:items-center sm:gap-2">
+                  <div class="sm:w-20">
+                    <label class="block text-[10px] text-stone-500">Qtd:</label>
+                    <input type="number" step="0.1" id="cat-qtd-${setor.id}" value="1" class="w-full border rounded px-2 py-1.5 sm:py-1 text-xs">
+                  </div>
+                  <div class="sm:w-24">
+                    <label class="block text-[10px] text-stone-500">Unit (R$):</label>
+                    <input type="number" step="0.01" id="cat-unit-${setor.id}" value="0.00" class="w-full border rounded px-2 py-1.5 sm:py-1 text-xs font-mono">
+                  </div>
+                  <button onclick="adicionarDoCatalogoSelecionado('${setor.key}', '${setor.id}')" class="col-span-2 sm:mt-4 sm:flex-grow px-3 py-2 sm:py-1 bg-brand-amber hover:bg-brand-orange text-stone-900 hover:text-white font-bold text-xs rounded transition">
+                    Adicionar
+                  </button>
+                </div>
+              </div>
+
+              <!-- Itens do Orçamento -->
+              <div class="lg:col-span-7 bg-white p-4 rounded-xl border border-stone-200 flex flex-col justify-between">
+                <div>
+                  <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-xs font-bold text-brand-darkOrange uppercase tracking-wider">Itens do Orçamento</h3>
+                    <span class="text-[10px] text-stone-500">Dois cliques na linha para editar</span>
+                  </div>
+                  <div class="area-tabela overflow-y-auto max-h-60 border rounded-lg">
+                    <table class="tabela-resp w-full text-left text-xs border-collapse">
+                      <thead class="bg-brand-darkOrange text-white sticky top-0">
+                        <tr>
+                          <th class="p-2">Descrição</th>
+                          <th class="p-2 text-center">Qtd</th>
+                          <th class="p-2 text-right">Unit (R$)</th>
+                          <th class="p-2 text-right">Total (R$)</th>
+                          <th class="p-2 text-center">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody id="orc-corpo-${setor.id}" class="divide-y divide-stone-100">
+                        <!-- Itens Adicionados -->
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Formulário Adicionar Serviço Manual -->
+            <div class="bg-white p-3 rounded-xl border border-stone-200">
+              <h4 class="text-xs font-bold text-stone-700 mb-2">Adicionar Serviço Manual</h4>
+              <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+                <div class="sm:col-span-6">
+                  <label class="block text-[10px] text-stone-500">Descrição:</label>
+                  <input type="text" id="manual-desc-${setor.id}" placeholder="Descrição do item" class="w-full border rounded px-2.5 py-1.5 text-xs">
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-[10px] text-stone-500">Qtd:</label>
+                  <input type="number" step="0.1" id="manual-qtd-${setor.id}" value="1" class="w-full border rounded px-2 py-1.5 text-xs">
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-[10px] text-stone-500">Valor Unit (R$):</label>
+                  <input type="number" step="0.01" id="manual-unit-${setor.id}" value="0.00" class="w-full border rounded px-2 py-1.5 text-xs font-mono">
+                </div>
+                <div class="sm:col-span-2">
+                  <button onclick="adicionarItemManual('${setor.key}', '${setor.id}')" class="w-full py-1.5 bg-brand-amber hover:bg-brand-orange text-stone-900 hover:text-white font-bold text-xs rounded transition">
+                    + Add Manual
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rodapé da Aba de Serviço com Total e Botões de PDF/WhatsApp -->
+            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 bg-brand-amberSoft/60 p-3.5 rounded-xl border border-brand-amber">
+              <div class="text-base font-bold text-brand-deepOrange text-center sm:text-left" id="total-label-${setor.id}">
+                Total: R$ 0,00
+              </div>
+              <div class="grid grid-cols-3 gap-2 w-full sm:w-auto sm:flex sm:flex-wrap sm:items-center">
+                <button onclick="enviarWhatsAppOrcamento('${setor.key}')" class="px-2 sm:px-3.5 py-2 sm:py-1.5 bg-brand-whatsapp hover:bg-brand-whatsappHover text-white font-bold text-[11px] sm:text-xs rounded-lg shadow transition flex items-center justify-center gap-1.5">
+                  <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                </button>
+                <button onclick="imprimirOuVisualizarOrcamento('${setor.key}', true)" class="px-2 sm:px-3 py-2 sm:py-1.5 bg-brand-amber hover:bg-brand-orange text-stone-900 hover:text-white font-bold text-[11px] sm:text-xs rounded-lg shadow transition flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-eye"></i> Vis. PDF
+                </button>
+              <button onclick="imprimirOuVisualizarOrcamento('${setor.key}', false)" class="px-2 sm:px-3.5 py-2 sm:py-1.5 bg-brand-deepOrange hover:bg-brand-darkOrange text-white font-bold text-[11px] sm:text-xs rounded-lg shadow transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-download"></i> Descarregar PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Renderiza itens do catálogo para este setor
+        renderizarCatalogoDOM(setor.key, setor.id);
+        renderizarTabelaItensOrcamento(setor.key, setor.id);
+      });
+    }
+
+    let catalogoSelecionadoItem = {};
+
+    function renderizarCatalogoDOM(setorKey, setorId) {
+      const tbody = document.getElementById(`catalogo-corpo-${setorId}`);
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      // O catálogo é reconstruído: a seleção anterior deixava de estar
+      // assinalada e o botão "Adicionar" já não tinha a que item se aplicar.
+      delete catalogoSelecionadoItem[setorId];
+
+      const catalogo = CATALOGO_SERVICOS[setorKey] || [];
+      catalogo.forEach((item) => {
+        const [desc, preco, un] = item;
+        const rotulo = `${desc} (${un})`;
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-amber-50 cursor-pointer transition";
+        tr.onclick = () => {
+          catalogoSelecionadoItem[setorId] = { desc, un };
+          // Destacar linha
+          Array.from(tbody.children).forEach(el => el.classList.remove("bg-amber-100", "font-bold"));
+          tr.classList.add("bg-amber-100", "font-bold");
+        };
+        tr.ondblclick = () => {
+          adicionarItemDireto(setorKey, setorId, rotulo, 1, preco);
+        };
+
+        tr.innerHTML = `
+          <td class="td-titulo p-2 text-stone-800" data-label="Descrição">${escapeHtml(desc)}</td>
+          <td class="p-2 text-center text-stone-500 font-mono" data-label="Unid.">${escapeHtml(un)}</td>
+          <td class="td-acoes p-2 text-center" data-label="Ação">
+            <button onclick="event.stopPropagation(); adicionarItemDireto('${setorKey}', '${setorId}', ${JSON.stringify(rotulo)}, 1, ${preco})" class="btn-icone p-1 hover:text-brand-deepOrange text-stone-500">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function adicionarDoCatalogoSelecionado(setorKey, setorId) {
+      const selecionado = catalogoSelecionadoItem[setorId];
+      if (!selecionado) {
+        showToast("Selecione um item do catálogo clicando nele.", "warning");
+        return;
+      }
+
+      // Sem "|| 1"/"|| 0": isso transformava uma quantidade 0 válida em 1.
+      const qtd = lerNumero(`cat-qtd-${setorId}`, 1);
+      const unit = lerNumero(`cat-unit-${setorId}`, 0);
+
+      adicionarItemDireto(setorKey, setorId, `${selecionado.desc} (${selecionado.un})`, qtd, unit);
+    }
+
+    function lerNumero(idCampo, predefinido) {
+      const bruto = (document.getElementById(idCampo) || {}).value;
+      if (bruto === undefined || bruto === null || String(bruto).trim() === "") return predefinido;
+      const n = parseFloat(bruto);
+      return isFinite(n) ? n : NaN;
+    }
+
+    function adicionarItemDireto(setorKey, setorId, descricao, qtd, unitario) {
+      if (isNaN(qtd) || isNaN(unitario)) {
+        showToast("Valores numéricos inválidos.", "warning");
+        return;
+      }
+      if (!Array.isArray(AppState.orcamentos[setorKey])) {
+        AppState.orcamentos[setorKey] = [];
+      }
+
+      AppState.orcamentos[setorKey].push({
+        descricao,
+        qtd,
+        unitario,
+        total: qtd * unitario
+      });
+
+      renderizarTabelaItensOrcamento(setorKey, setorId);
+      confirmarGravacao("Item adicionado ao orçamento!");
+    }
+
+    function adicionarItemManual(setorKey, setorId) {
+      const desc = document.getElementById(`manual-desc-${setorId}`).value.trim();
+      const qtd = lerNumero(`manual-qtd-${setorId}`, NaN);
+      const unit = lerNumero(`manual-unit-${setorId}`, NaN);
+
+      if (!desc) {
+        showToast("A descrição do serviço não pode ficar vazia.", "warning");
+        return;
+      }
+      if (isNaN(qtd) || isNaN(unit)) {
+        showToast("Preencha a quantidade e o valor unitário com números válidos.", "warning");
+        return;
+      }
+      if (!Array.isArray(AppState.orcamentos[setorKey])) {
+        AppState.orcamentos[setorKey] = [];
+      }
+
+      AppState.orcamentos[setorKey].push({
+        descricao: desc,
+        qtd,
+        unitario: unit,
+        total: qtd * unit
+      });
+
+      document.getElementById(`manual-desc-${setorId}`).value = "";
+      renderizarTabelaItensOrcamento(setorKey, setorId);
+      confirmarGravacao("Serviço manual adicionado!");
+    }
+
+    function removerItemOrcamento(setorKey, setorId, index) {
+      const itens = AppState.orcamentos[setorKey];
+      if (!Array.isArray(itens) || !itens[index]) return;
+      itens.splice(index, 1);
+      renderizarTabelaItensOrcamento(setorKey, setorId);
+      confirmarGravacao("Item removido do orçamento.");
+    }
+
+    function renderizarTabelaItensOrcamento(setorKey, setorId) {
+      const tbody = document.getElementById(`orc-corpo-${setorId}`);
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      let totalGeral = 0;
+      const itens = AppState.orcamentos[setorKey] || [];
+
+      itens.forEach((item, idx) => {
+        const totalItem = Number(item.total) || 0;
+        totalGeral += totalItem;
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-amber-50 cursor-pointer transition";
+        tr.ondblclick = () => abrirModalEditarItem(setorKey, setorId, idx);
+
+        tr.innerHTML = `
+          <td class="td-titulo p-2 text-stone-800 font-medium" data-label="Descrição">${escapeHtml(item.descricao)}</td>
+          <td class="p-2 text-center font-mono" data-label="Qtd">${escapeHtml(formatarQtd(item.qtd))}</td>
+          <td class="p-2 text-right font-mono whitespace-nowrap" data-label="Unit. (R$)">R$ ${formatarMoeda(item.unitario)}</td>
+          <td class="p-2 text-right font-mono font-bold text-stone-900 whitespace-nowrap" data-label="Total (R$)">R$ ${formatarMoeda(totalItem)}</td>
+          <td class="td-acoes p-2 text-center whitespace-nowrap" data-label="Ações">
+            <div class="flex items-center justify-center gap-1">
+              <button onclick="abrirModalEditarItem('${setorKey}', '${setorId}', ${idx})" title="Editar" class="btn-icone p-1 hover:text-brand-orange text-stone-500"><i class="fa-solid fa-pen"></i></button>
+              <button onclick="removerItemOrcamento('${setorKey}', '${setorId}', ${idx})" title="Remover" class="btn-icone p-1 hover:text-red-600 text-stone-500"><i class="fa-solid fa-trash-can"></i></button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      const lblTotal = document.getElementById(`total-label-${setorId}`);
+      if (lblTotal) {
+        lblTotal.innerText = `Total: R$ ${formatarMoeda(totalGeral)}`;
+      }
+    }
+
+    function abrirModalEditarItem(setorKey, setorId, index) {
+      const item = AppState.orcamentos[setorKey][index];
+      if (!item) return;
+
+      document.getElementById("edit-item-setor").value = setorKey;
+      document.getElementById("edit-item-index").value = index;
+      document.getElementById("edit-item-desc").value = item.descricao;
+      document.getElementById("edit-item-qtd").value = item.qtd;
+      document.getElementById("edit-item-unit").value = item.unitario;
+
+      document.getElementById("modal-editar-item").classList.remove("hidden");
+    }
+
+    function fecharModalEditarItem() {
+      document.getElementById("modal-editar-item").classList.add("hidden");
+    }
+
+    function salvarItemEditado() {
+      const setorKey = document.getElementById("edit-item-setor").value;
+      const index = parseInt(document.getElementById("edit-item-index").value, 10);
+      const desc = document.getElementById("edit-item-desc").value.trim();
+      const qtd = parseFloat(document.getElementById("edit-item-qtd").value);
+      const unit = parseFloat(document.getElementById("edit-item-unit").value);
+
+      if (!desc || isNaN(qtd) || isNaN(unit)) {
+        showToast("Valores inválidos inseridos.", "warning");
+        return;
+      }
+
+      const itens = AppState.orcamentos[setorKey];
+      if (!Array.isArray(itens) || index < 0 || index >= itens.length) {
+        // O item pode ter sido removido noutro separador/enquanto o modal
+        // estava aberto: escrever na posição liberta criava um buraco.
+        showToast("O item a editar já não existe no orçamento.", "warning");
+        fecharModalEditarItem();
+        return;
+      }
+
+      itens[index] = {
+        descricao: desc,
+        qtd,
+        unitario: unit,
+        total: qtd * unit
+      };
+
+      const setorObj = CONFIG_SETORES.find(s => s.key === setorKey);
+      if (setorObj) renderizarTabelaItensOrcamento(setorKey, setorObj.id);
+      renderizarTabelaUnificada();
+
+      fecharModalEditarItem();
+      confirmarGravacao("Item atualizado com sucesso!");
+    }
+
+    function selecionarClienteParaOrcamento(setorId) {
+      const sel = document.getElementById(`${setorId}-cli-select`);
+      const end = document.getElementById(`${setorId}-cli-end`);
+      const tel = document.getElementById(`${setorId}-cli-tel`);
+      if (!sel || !sel.value) return;
+
+      // O <option> transporta o ID do cliente, não o nome: com nomes
+      // repetidos a comparação por nome devolvia o registo errado.
+      const cli = obterClientePorId(sel.value);
+      if (!cli) return;
+
+      if (end) end.value = cli.endereco || "";
+      if (tel) tel.value = cli.telefone || "";
+      definirClienteAtivo(cli);
+      salvarEstadoGeral();
+    }
+
+    /* Reposiciona o cliente ativo guardado no estado após um recarregamento
+       da página: os <select> são reconstruídos e os campos de morada/telefone
+       ficavam vazios, obrigando a redigitar o cliente em cada sessão. */
+    function restaurarClienteAtivoNaUI() {
+      const ativo = clienteAtivo();
+      if (!ativo.nome) return;
+      if (!AppState.clientes.some(c => c.nome === ativo.nome)) return;
+
+      ["eletrica", "seguranca", "solar", "unificado"].forEach(setor => {
+        const sel = document.getElementById(`${setor}-cli-select`);
+        const endInput = document.getElementById(`${setor}-cli-end`);
+        const telInput = document.getElementById(`${setor}-cli-tel`);
+
+        selecionarSeExiste(sel, AppState.clienteAtivoOrcamento.id);
+        if (endInput && !endInput.value) endInput.value = ativo.endereco;
+        if (telInput && !telInput.value) telInput.value = ativo.telefone;
+      });
+
+      const selAgenda = document.getElementById("agenda-cliente-select");
+      selecionarSeExiste(selAgenda, AppState.clienteAtivoOrcamento.id);
+    }
+
+    function renderizarTabelaUnificada() {
+      const tbody = document.getElementById("tabela-unificado-corpo");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      let totalGeral = 0;
+      const setoresNomes = { "Eletrica": "Elétrica", "Seguranca": "Segurança", "Solar": "Energia Solar" };
+
+      ["Eletrica", "Seguranca", "Solar"].forEach(k => {
+        (AppState.orcamentos[k] || []).forEach(item => {
+          totalGeral += Number(item.total) || 0;
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-amber-50";
+          tr.innerHTML = `
+            <td class="p-2.5 font-bold text-stone-700" data-label="Setor">${setoresNomes[k]}</td>
+            <td class="td-titulo p-2.5 text-stone-800" data-label="Descrição">${escapeHtml(item.descricao)}</td>
+            <td class="p-2.5 text-center font-mono" data-label="Qtd">${escapeHtml(formatarQtd(item.qtd))}</td>
+            <td class="p-2.5 text-right font-mono whitespace-nowrap" data-label="Val. Unit.">R$ ${formatarMoeda(item.unitario)}</td>
+            <td class="p-2.5 text-right font-mono font-bold text-stone-900 whitespace-nowrap" data-label="Total">R$ ${formatarMoeda(item.total)}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+
+      const lbl = document.getElementById("total-unificado-label");
+      if (lbl) lbl.innerText = `Valor Total Consolidado: R$ ${formatarMoeda(totalGeral)}`;
+    }
+
+    // Secções normalizadas de condutor (NBR 5410, Anexo E / Tabela 58).
+    function menorSecaoPadrao(secMinima) {
+      const secoes = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400];
+      const alvo = secMinima - 1e-9;
+      return secoes.find(s => s >= alvo) || secMinima;
+    }
+
+    // O resultado é pt-BR: a virgula decimal tem de aparecer em todo o
+    // bloco, senão o mesmo documento mistura "24.70 A" com "4,0%".
+    function decimalPT(valor, casas) {
+      return Number(valor).toFixed(casas).replace(".", ",");
+    }
+
+    function calcularNBR5410() {
+      const pot = parseFloat(document.getElementById("nbr-pot").value);
+      const ten = parseFloat(document.getElementById("nbr-ten").value);
+      const dist = parseFloat(document.getElementById("nbr-dist").value);
+      const fp = parseFloat(document.getElementById("nbr-fp").value);
+
+      const out = document.getElementById("nbr-resultado");
+
+      if (isNaN(pot) || isNaN(ten) || isNaN(dist) || isNaN(fp)) {
+        showToast("Por favor, insira apenas valores numéricos válidos.", "warning");
+        return;
+      }
+      if (ten <= 0 || fp <= 0) {
+        showToast("Tensão e Fator de Potência devem ser superiores a zero.", "warning");
+        return;
+      }
+      if (pot <= 0 || dist < 0) {
+        showToast("A potência deve ser maior que zero e a distância não pode ser negativa.", "warning");
+        return;
+      }
+      if (fp > 1) {
+        showToast("O fator de potência não pode ser maior que 1.", "warning");
+        return;
+      }
+
+      // 1. Corrente de Projeto
+      const Ib = pot / (ten * fp);
+
+      // 2. Disjuntor termomagnético comercial
+      const disjuntores = [10, 16, 20, 25, 32, 40, 50, 63, 70, 80, 100];
+      let In = null;
+      for (let d of disjuntores) {
+        if (d >= Ib) { In = d; break; }
+      }
+      // Acima de 100 A a tabela de disjuntores comerciais não chega: antes de
+      // devolver 100 A (que protegeria uma carga de 250 A, o que é perigoso)
+      // assume-se o fim da tabela e avisa-se o utilizador.
+      const foraDaTabelaDisjuntor = In === null;
+      if (foraDaTabelaDisjuntor) In = 100;
+
+      // 3. Critério da Capacidade de Condução de Corrente
+      let S_corrente = 1.5;
+      if (Ib <= 11) S_corrente = 1.5;
+      else if (Ib <= 15.5) S_corrente = 2.5;
+      else if (Ib <= 21) S_corrente = 4.0;
+      else if (Ib <= 28) S_corrente = 6.0;
+      else if (Ib <= 36) S_corrente = 10.0;
+      else S_corrente = 16.0;
+
+      let S = S_corrente;
+
+      // 4. Critério de Queda de Tensão (Condutores de cobre, delta_u <= 4.0%)
+      let delta_u = (2 * dist * Ib) / (56 * S * ten) * 100;
+
+      while (delta_u > 4.0 && S < 35.0) {
+        if (S === 1.5) S = 2.5;
+        else if (S === 2.5) S = 4.0;
+        else if (S === 4.0) S = 6.0;
+        else if (S === 6.0) S = 10.0;
+        else if (S === 10.0) S = 16.0;
+        else if (S === 16.0) S = 25.0;
+        else S = 35.0;
+
+        delta_u = (2 * dist * Ib) / (56 * S * ten) * 100;
+      }
+      // Mesmo já no maior condutor da tabela, a queda pode continuar acima do
+      // limite (circuito muito longo). Antes o resultado aparecia sem aviso.
+      const quedaAcimaDoLimite = delta_u > 4.0;
+
+      // 5. Condutor de proteção (Terra) — NBR 5410 item 6.5.6.1 / Tabela 58.
+      //    O PE tem de suportar a corrente de falha sem que a proteção do
+      //    circuito atuue, pelo que nunca desce abaixo de 16 mm² enquanto a
+      //    fase é <= 16 mm²; acima disso vale metade da fase, arredondado para
+      //    a secção normalizada seguinte. A versão anterior devolvia a própria
+      //    fase (PE = 1,5 mm² quando S = 1,5 mm²) e saltava de 16 para 18 mm²
+      //    entre S = 35 e S = 36 — um dimensionamento de terra inseguro.
+      const S_terra = menorSecaoPadrao(S <= 16 ? 16 : S / 2);
+
+      const avisos = [];
+      if (foraDaTabelaDisjuntor) {
+        avisos.push(
+          `• ATENÇÃO: a corrente de projeto (${decimalPT(Ib, 2)} A) excede o maior disjuntor\n` +
+          `  da tabela (100 A). O valor apresentado NÃO é válido: dimensione o\n` +
+          `  quadro por corrente e confirme com um projetoista.`
+        );
+      }
+      if (quedaAcimaDoLimite) {
+        avisos.push(
+          `• ATENÇÃO: mesmo com ${decimalPT(S, 1)} mm² a queda de tensão é de\n` +
+          `  ${decimalPT(delta_u, 2)}% (limite 4,0%). Reduza o comprimento do circuito\n` +
+          `  ou divida a carga em circuitos.`
+        );
+      }
+
+      out.innerText =
+`=== RESULTADOS DO DIMENSIONAMENTO (NBR 5410) ===
+• Corrente de Projeto (Ib): ${decimalPT(Ib, 2)} A
+• Disjuntor Termomagnético Sugerido: ${In} A (Curva C)${foraDaTabelaDisjuntor ? " [FORA DA TABELA]" : ""}
+• Secção Mínima Fase / Neutro: ${decimalPT(S, 1)} mm²
+• Secção Condutor de Proteção (Terra): ${decimalPT(S_terra, 1)} mm²
+• Queda de Tensão Estimada: ${decimalPT(delta_u, 2)}% (Limite NBR: ≤ 4,0%)
+${avisos.length ? "\n" + avisos.join("\n") : ""}`;
+
+      if (avisos.length) {
+        showToast("Dimensionamento calculado, com avisos. Leia o resultado.", "warning");
+      } else {
+        showToast("Dimensionamento calculado!");
+      }
+    }
+
+    const NOMES_SETOR = {
+      "Eletrica": "Elétrica",
+      "Seguranca": "Segurança",
+      "Solar": "Energia Solar"
+    };
+
+    // Normaliza um número português para o formato internacional do WhatsApp.
+    // A regra antiga (11 dígitos = já com código) quebrava com os telefones
+    // landline escritos com o zero do indicativo, p.ex. "(011) 3333-4444":
+    // o zero à esquerda era tomado por parte do número de telemóvel.
+    function normalizarTelefoneBR(telefone) {
+      let d = String(telefone || "").replace(/\D/g, "");
+      if (!d) return "";
+      // "00" é o indicativo internacional: o número já vem completo e não
+      // pode receber o 55 do Brasil.
+      if (d.startsWith("00")) return d.slice(2);
+      if (d.startsWith("55")) return d;
+      d = d.replace(/^0+/, "");   // remove o zero do indicativo (011 -> 11)
+      if (!d) return "";
+      return "55" + d;
+    }
+
+    // Texto do WhatsApp: o asterisco é a formatação de negrito do próprio
+    // WhatsApp, por isso o nome do cliente é que o usava. Retira-o para não
+    // desalinhar a mensagem quando a descrição já traz asteriscos.
+    function textoWhatsApp(valor) {
+      return String(valor === null || valor === undefined ? "" : valor).replace(/[*_~`]/g, "");
+    }
+
+    function enviarWhatsAppOrcamento(setorKey) {
+      let itens = [];
+      let nome = "";
+      let telefone = "";
+      const ativo = clienteAtivo();
+
+      if (setorKey === "Unificado") {
+        ["Eletrica", "Seguranca", "Solar"].forEach(k => {
+          (AppState.orcamentos[k] || []).forEach(it => itens.push({ ...it, setor: k }));
+        });
+        nome = document.getElementById("unificado-cli-select")?.value.trim() ? ativoNomeOuSelecionado("unificado") : ativo.nome;
+        telefone = document.getElementById("unificado-cli-tel")?.value.trim() || ativo.telefone;
+      } else {
+        const setorObj = CONFIG_SETORES.find(s => s.key === setorKey);
+        itens = AppState.orcamentos[setorKey] || [];
+        if (setorObj) {
+          nome = document.getElementById(`${setorObj.id}-cli-select`)?.value.trim() ? ativoNomeOuSelecionado(setorObj.id) : ativo.nome;
+          telefone = document.getElementById(`${setorObj.id}-cli-tel`)?.value.trim() || ativo.telefone;
+        }
+      }
+
+      if (!itens.length) {
+        showToast("Não existem itens no orçamento para enviar.", "warning");
+        return;
+      }
+
+      if (!nome) nome = "Cliente";
+      if (!telefone) {
+        showToast("Por favor, indique ou selecione o telefone do cliente para enviar pelo WhatsApp.", "warning");
+        return;
+      }
+
+      const telLimpo = normalizarTelefoneBR(telefone);
+      if (!telLimpo) {
+        showToast("O número de telefone indicado é inválido.", "warning");
+        return;
+      }
+
+      const total = totalItens(itens);
+      const titulo = setorKey === "Unificado" ? "Orçamento Geral Consolidado" : `Orçamento - ${NOMES_SETOR[setorKey] || setorKey}`;
+      const empresa = AppState.empresa.nome;
+
+      let msg = `Olá *${textoWhatsApp(nome)}*, segue o resumo do seu *${titulo}*${empresa ? " pela *" + textoWhatsApp(empresa) + "*" : ""}:\n\n`;
+
+      itens.forEach((it, idx) => {
+        const valores = `Qtd: ${formatarQtd(it.qtd)} x R$ ${formatarMoeda(it.unitario)} = R$ ${formatarMoeda(it.total)}`;
+        msg += setorKey === "Unificado"
+          ? `${idx + 1}. [${NOMES_SETOR[it.setor] || it.setor}] ${it.descricao} - ${valores}\n`
+          : `${idx + 1}. ${it.descricao} - ${valores}\n`;
+      });
+
+      msg += `\n*VALOR TOTAL:* R$ ${formatarMoeda(total)}\n`;
+      msg += `\nValidade da proposta: 15 dias.\nAguardamos o seu contacto!`;
+
+      window.open(`https://wa.me/${telLimpo}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
+    }
+
+    // Nome apresentado nos orçamentos: o que está selecionado no <select>
+    // daquele setor ou, se não houver seleção, o cliente ativo guardado.
+    function ativoNomeOuSelecionado(setorId) {
+      const sel = document.getElementById(`${setorId}-cli-select`);
+      if (sel && sel.value) {
+        const cli = obterClientePorId(sel.value);
+        if (cli) return cli.nome;
+      }
+      return clienteAtivo().nome;
+    }
+
+    /* ====================== GERADOR DE PDF (SEM DEPENDÊNCIAS) ======================
+       A aplicação é um ficheiro HTML único e tem de funcionar sem internet, num
+       telemóvel com rede fraca. Trazer uma biblioteca de PDF por CDN faria o
+       botão falhar exatamente no sítio onde o orçamento tem de sair, por isso
+       o ficheiro PDF é escrito aqui, byte a byte.
+
+       Só se usam as 14 fontes padrão do PDF com /WinAnsiEncoding, que cobrem
+       o português (á, ã, ç, õ, é...) sem precisar de embeber um ficheiro de
+       fonte — daí a tabela de larguras, necessária para partir as descrições
+       dos Serviços em linhas sem as deixar a invadir a coluna vizinha.
+       ============================================================================= */
+
+    const PDF_LARG = 595.28;   // A4 em pontos
+    const PDF_ALT = 841.89;
+    const PDF_MARGEM = 40;
+    const PDF_LARG_UTIL = PDF_LARG - PDF_MARGEM * 2;
+
+    // Larguras oficiais de Helvetica e Helvetica-Bold (em milésimos de em) para
+    // os caracteres 32..126. Os acentuados têm a mesma largura da letra base
+    // nestas fontes, por isso basta remapeá-los.
+    const PDF_LARGURAS = {
+      normal: [278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278,
+               556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556,
+               1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778,
+               667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556,
+               333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556,
+               556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584],
+      negrito: [278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278,
+               556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611,
+               975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778,
+               667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556,
+               333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611,
+               611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584]
+    };
+
+    const PDF_BASE_ACENTUADO = {
+      "á": "a", "à": "a", "ã": "a", "â": "a", "ä": "a", "å": "a",
+      "é": "e", "è": "e", "ê": "e", "ë": "e",
+      "í": "i", "ì": "i", "î": "i", "ï": "i",
+      "ó": "o", "ò": "o", "ô": "o", "õ": "o", "ö": "o",
+      "ú": "u", "ù": "u", "û": "u", "ü": "u",
+      "ç": "c", "ñ": "n", "ý": "y", "ÿ": "y",
+      "Á": "A", "À": "A", "Ã": "A", "Â": "A", "Ä": "A", "Å": "A",
+      "É": "E", "È": "E", "Ê": "E", "Ë": "E",
+      "Í": "I", "Ì": "I", "Î": "I", "Ï": "I",
+      "Ó": "O", "Ò": "O", "Ô": "O", "Õ": "O", "Ö": "O",
+      "Ú": "U", "Ù": "U", "Û": "U", "Ü": "U",
+      "Ç": "C", "Ñ": "N"
+    };
+
+    const PDF_LARGURAS_EXTRAS = { "–": 556, "—": 1000, "•": 350, "…": 1000, "€": 556, "«": 556, "»": 556, "·": 278, "™": 1000, "“": 333, "”": 333, "‘": 222, "’": 222 };
+
+    // Caracteres tipográficos que existem em WinAnsi mas não em Latin-1.
+    const PDF_WINANSI = {
+      "€": 128, "‚": 130, "ƒ": 131, "„": 132, "…": 133, "†": 134, "‡": 135,
+      "ˆ": 136, "‰": 137, "Š": 138, "‹": 139, "Œ": 140, "Ž": 142,
+      "‘": 145, "’": 146, "“": 147, "”": 148, "•": 149, "–": 150,
+      "—": 151, "˜": 152, "™": 153, "š": 154, "›": 155, "œ": 156, "ž": 158, "Ÿ": 159
+    };
+
+    function pdfLarguraChar(c, negrito) {
+      const tabela = PDF_LARGURAS[negrito ? "negrito" : "normal"];
+      const base = PDF_BASE_ACENTUADO[c] || c;
+      const cp = base.charCodeAt(0);
+      if (cp >= 32 && cp <= 126) return tabela[cp - 32];
+      if (PDF_LARGURAS_EXTRAS[c] !== undefined) return PDF_LARGURAS_EXTRAS[c];
+      return tabela[48];  // largura do '0', como aproximação conservadora
+    }
+
+    function pdfLarguraTexto(texto, tamanho, negrito) {
+      let total = 0;
+      for (const c of String(texto == null ? "" : texto)) total += pdfLarguraChar(c, negrito);
+      return total * tamanho / 1000;
+    }
+
+    // Converte para a sequência de bytes WinAnsi que o PDF espera, escapando
+    // os caracteres com significado sintáctico dentro de uma string PDF.
+    function pdfTextoBruto(texto) {
+      let saida = "";
+      for (const c of String(texto == null ? "" : texto)) {
+        const cp = c.codePointAt(0);
+        if (cp === 40 || cp === 41 || cp === 92) saida += "\\" + c;
+        else if (cp >= 32 && cp < 256) saida += c;
+        else if (PDF_WINANSI[c] !== undefined) saida += String.fromCharCode(PDF_WINANSI[c]);
+        else saida += "?";
+      }
+      return saida;
+    }
+
+    function pdfQuebrarLinha(texto, tamanho, negrito, maxLargura) {
+      const palavras = String(texto == null ? "" : texto).split(/\s+/).filter(Boolean);
+      if (!palavras.length) return [""];
+      const linhas = [];
+      let atual = "";
+      for (const palavra of palavras) {
+        const tentativa = atual ? atual + " " + palavra : palavra;
+        if (pdfLarguraTexto(tentativa, tamanho, negrito) <= maxLargura) {
+          atual = tentativa;
+          continue;
+        }
+        if (atual) linhas.push(atual);
+        if (pdfLarguraTexto(palavra, tamanho, negrito) > maxLargura) {
+          // Palavra sozinha mais larga que a coluna: parte-a ao meio.
+          let pedaco = "";
+          for (const c of palavra) {
+            if (pedaco && pdfLarguraTexto(pedaco + c, tamanho, negrito) > maxLargura) {
+              linhas.push(pedaco);
+              pedaco = "";
+            }
+            pedaco += c;
+          }
+          atual = pedaco;
+        } else {
+          atual = palavra;
+        }
+      }
+      if (atual) linhas.push(atual);
+      return linhas;
+    }
+
+    function pdfArred(valor, casas) {
+      const f = Math.pow(10, casas === undefined ? 2 : casas);
+      return Math.round((Number(valor) || 0) * f) / f;
+    }
+
+    function pdfCorRGB(hex) {
+      const limpo = String(hex || "#000000").replace("#", "");
+      const cheio = limpo.length === 3 ? limpo.split("").map(c => c + c).join("") : limpo;
+      const r = parseInt(cheio.slice(0, 2), 16) || 0;
+      const g = parseInt(cheio.slice(2, 4), 16) || 0;
+      const b = parseInt(cheio.slice(4, 6), 16) || 0;
+      return `${pdfArred(r / 255, 3)} ${pdfArred(g / 255, 3)} ${pdfArred(b / 255, 3)}`;
+    }
+
+    function criarDocumentoPDF() {
+      const paginas = [];
+      let ops = [];
+      let y = 0;
+      let numero = 0;
+
+      function novaPagina() {
+        ops = [];
+        paginas.push(ops);
+        numero = paginas.length;
+        y = PDF_ALT - PDF_MARGEM;
+      }
+
+      // Garante que há espaço para `altura`; se não houver, salta de página.
+      function espaco(altura) {
+        if (y - altura < PDF_MARGEM + 30) novaPagina();
+        return y;
+      }
+
+      function texto(x, base, conteudo, tamanho, negrito, cor) {
+        if (conteudo === null || conteudo === undefined || conteudo === "") return;
+        ops.push(`BT /${negrito ? "F2" : "F1"} ${tamanho} Tf ${cor} rg 1 0 0 1 ` +
+                 `${pdfArred(x)} ${pdfArred(base)} Tm (${pdfTextoBruto(conteudo)}) Tj ET`);
+      }
+
+      function textoDireita(xDireita, base, conteudo, tamanho, negrito, cor) {
+        texto(xDireita - pdfLarguraTexto(conteudo, tamanho, negrito), base, conteudo, tamanho, negrito, cor);
+      }
+
+      function textoCentro(xCentro, base, conteudo, tamanho, negrito, cor) {
+        texto(xCentro - pdfLarguraTexto(conteudo, tamanho, negrito) / 2, base, conteudo, tamanho, negrito, cor);
+      }
+
+      function retangulo(x, yBase, larg, alt, preenchimento, contorno) {
+        let s = "";
+        if (preenchimento) s += `${preenchimento} rg ${pdfArred(x)} ${pdfArred(yBase)} ${pdfArred(larg)} ${pdfArred(alt)} re f `;
+        if (contorno) s += `${contorno} RG 0.7 w ${pdfArred(x)} ${pdfArred(yBase)} ${pdfArred(larg)} ${pdfArred(alt)} re S`;
+        if (s) ops.push(s);
+      }
+
+      function linha(x1, y1, x2, y2, cor) {
+        ops.push(`${cor} RG 0.7 w ${pdfArred(x1)} ${pdfArred(y1)} m ${pdfArred(x2)} ${pdfArred(y2)} l S`);
+      }
+
+      function escreverRodape(textoEsquerda) {
+        const cinza = "0.45 0.45 0.45";
+        paginas.forEach((opsPagina, i) => {
+          const guardar = ops;
+          ops = opsPagina;
+          y = PDF_MARGEM;
+          linha(PDF_MARGEM, PDF_MARGEM - 14, PDF_LARG - PDF_MARGEM, PDF_MARGEM - 14, "0.8 0.8 0.8");
+          texto(PDF_MARGEM, PDF_MARGEM - 26, textoEsquerda, 7.5, false, cinza);
+          textoDireita(PDF_LARG - PDF_MARGEM, PDF_MARGEM - 26,
+            `Página ${i + 1} de ${paginas.length}`, 7.5, false, cinza);
+          ops = guardar;
+        });
+      }
+
+      function finalizar(metadados) {
+        if (!paginas.length) novaPagina();
+        escreverRodape(metadados.rodape || "");
+
+        const nPaginas = paginas.length;
+        const idF1 = 3, idF2 = 4;
+        const idPagina = i => 5 + i * 2;
+        const idConteudo = i => 6 + i * 2;
+        const idInfo = 5 + nPaginas * 2;
+        const totalObjetos = idInfo;
+
+        const objetos = new Array(totalObjetos + 1);
+        objetos[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+        objetos[2] = "<< /Type /Pages /Kids [" +
+          paginas.map((_, i) => `${idPagina(i)} 0 R`).join(" ") +
+          `] /Count ${nPaginas} >>`;
+        objetos[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
+        objetos[4] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>";
+        objetos[idInfo] = `<< /Title (${pdfTextoBruto(metadados.titulo || "Orçamento")}) ` +
+          `/Producer (${pdfTextoBruto("Rotta Design - Sistema de Orçamentos")}) ` +
+          `/CreationDate (${metadados.data || "D:200001010000"}) >>`;
+
+        paginas.forEach((conteudo, i) => {
+          const fluxo = conteudo.join("\n");
+          objetos[idPagina(i)] = "<< /Type /Page /Parent 2 0 R " +
+            `/MediaBox [0 0 ${pdfArred(PDF_LARG)} ${pdfArred(PDF_ALT)}] ` +
+            `/Resources << /Font << /F1 ${idF1} 0 R /F2 ${idF2} 0 R >> /ProcSet [/PDF /Text] >> ` +
+            `/Contents ${idConteudo(i)} 0 R >>`;
+          // /Length tem de ser o número exato de bytes do fluxo. Todo o fluxo é
+          // Latin-1 (ver pdfTextoBruto), por isso length == número de bytes.
+          objetos[idConteudo(i)] = `<< /Length ${fluxo.length} >>\nstream\n${fluxo}\nendstream`;
+        });
+
+        const partes = [];
+        let offset = 0;
+        const escrever = (txt) => { partes.push(txt); offset += txt.length; };
+
+        escrever("%PDF-1.4\n");
+        // Marca de ficheiro binário: alguns leitores engolem o cabeçalho se
+        // os primeiros bytes forem só ASCII.
+        escrever("%\xE2\xE3\xCF\xD3\n");
+
+        const posicoes = [];
+        for (let i = 1; i <= totalObjetos; i++) {
+          posicoes[i] = offset;
+          escrever(`${i} 0 obj\n${objetos[i]}\nendobj\n`);
+        }
+
+        const inicioXref = offset;
+        escrever(`xref\n0 ${totalObjetos + 1}\n`);
+        escrever("0000000000 65535 f \n");
+        for (let i = 1; i <= totalObjetos; i++) {
+          escrever(String(posicoes[i]).padStart(10, "0") + " 00000 n \n");
+        }
+        escrever(`trailer\n<< /Size ${totalObjetos + 1} /Root 1 0 R /Info ${idInfo} 0 R >>\n` +
+                 `startxref\n${inicioXref}\n%%EOF\n`);
+
+        const textoFinal = partes.join("");
+        const bytes = new Uint8Array(textoFinal.length);
+        for (let i = 0; i < textoFinal.length; i++) bytes[i] = textoFinal.charCodeAt(i) & 0xFF;
+        return bytes;
+      }
+
+      novaPagina();
+      return { texto, textoDireita, textoCentro, retangulo, linha, espaco, novaPagina,
+               finalizar, get paginas() { return paginas.length; }, get y() { return y; } };
+    }
+
+    function pdfDataISO(valor) {
+      const d = valor ? new Date(valor) : new Date();
+      const p = (n, l) => String(n).padStart(l || 2, "0");
+      return `D:${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}` +
+             `${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+    }
+
+    // Desenha o orçamento. Recebe um objeto simples para poder ser testado sem
+    // DOM. Devolve o PDF em bytes.
+    function construirPdfOrcamento(dados) {
+      const doc = criarDocumentoPDF();
+      // O cursor vertical vive no documento (é ele que decide os saltos de
+      // página); a cópia local é ressincronizada sempre que há quebra.
+      let y = doc.y;
+      const sincronizar = () => { y = doc.y; };
+
+      const esq = PDF_MARGEM;
+      const dir = PDF_LARG - PDF_MARGEM;
+      const meio = PDF_LARG / 2;
+      const cor = (hex) => pdfCorRGB(hex);
+      const tema = cor(dados.corTema || "#D84315");
+      const preto = cor("#000000");
+      const cinza = cor("#444444");
+      const laranja = cor("#FFB300");
+      const amareloClaro = cor("#FFF8E1");
+      const laranjaEscuro = cor("#FF9800");
+      const amareloTotal = cor("#FFECB3");
+
+      const mostrarSetor = !!dados.mostrarSetor;
+      const colSetor = 78, colQtd = 45, colUnit = 75, colTotal = 90;
+      const colDesc = PDF_LARG_UTIL - (mostrarSetor ? colSetor + colQtd + colUnit + colTotal
+                                                     : colQtd + colUnit + colTotal);
+      const xDesc = esq + (mostrarSetor ? colSetor : 0);
+      const xQtd = esq + (mostrarSetor ? colSetor + colDesc : colDesc);
+      const xUnit = xQtd + colQtd;
+      const xTotal = xUnit + colUnit;
+      const tamDesc = 9, tamLinha = 12, alturaLinha = 16;
+
+      // ---------- Cabeçalho (só na primeira página) ----------
+      const nomeEmpresa = dados.empresa.nome || "Orçamento";
+      doc.textoCentro(meio, y - 15, nomeEmpresa.toUpperCase(), 16, true, tema);
+      y -= 22;
+      const contactos = [
+        dados.empresa.telefone ? "Telefone: " + dados.empresa.telefone : "",
+        dados.empresa.email ? "E-mail: " + dados.empresa.email : ""
+      ].filter(Boolean);
+      if (contactos.length) {
+        doc.textoCentro(meio, y - 9, contactos.join("  |  "), 9, false, cinza);
+        y -= 14;
+      }
+      doc.linha(esq, y, dir, y, laranja);
+      y -= 22;
+
+      // ---------- Título ----------
+      doc.textoCentro(meio, y - 11, dados.titulo, 12.5, true, preto);
+      y -= 20;
+
+      // ---------- Caixa de dados do cliente ----------
+      const linhasCliente = [
+        [["Cliente:", dados.cliente.nome], ["Data:", dados.dataHora]],
+        [["Morada:", dados.cliente.endereco], ["Validade:", dados.validade || "15 dias"]],
+        [["Telefone:", dados.cliente.telefone], ["Condição:", dados.condicao || "A combinar"]]
+      ];
+      const alturaCaixa = linhasCliente.length * 15 + 14;
+      doc.retangulo(esq, y - alturaCaixa, PDF_LARG_UTIL, alturaCaixa, amareloClaro, laranja);
+      let yCaixa = y - 20;
+      linhasCliente.forEach(linhaDados => {
+        // Cada linha é um par simples [rótulo, valor] por lado. O rótulo vai a
+        // negrito e o valor logo a seguir, à posição exacta do fim do rótulo.
+        const metade = PDF_LARG_UTIL / 2;
+        [[esq + 10, linhaDados[0]], [esq + metade + 10, linhaDados[1]]].forEach(([x, par]) => {
+          const rotulo = par[0] || "";
+          const valor = par[1] == null ? "" : String(par[1]);
+          doc.texto(x, yCaixa, rotulo, 9, true, preto);
+          doc.texto(x + pdfLarguraTexto(rotulo + " ", 9, true), yCaixa, valor, 9, false, preto);
+        });
+        yCaixa -= 15;
+      });
+      y -= alturaCaixa + 20;
+
+      // ---------- Tabela ----------
+      doc.texto(esq, y - 9, "Discriminação dos Serviços", 10, true, preto);
+      y -= 20;
+
+      function cabecalhoTabela() {
+        const alt = 19;
+        doc.retangulo(esq, y - alt, PDF_LARG_UTIL, alt, tema, null);
+        let x = esq + 6;
+        if (mostrarSetor) { doc.texto(x, y - 13, "Setor", 9, true, preto); x += colSetor; }
+        doc.texto(x, y - 13, "Descrição do Serviço", 9, true, preto);
+        doc.textoCentro(xQtd + colQtd / 2, y - 13, "Qtd", 9, true, preto);
+        doc.textoDireita(xUnit + colUnit - 6, y - 13, "Val. Unit.", 9, true, preto);
+        doc.textoDireita(xTotal + colTotal - 6, y - 13, "Total", 9, true, preto);
+        y -= alt;
+      }
+
+      cabecalhoTabela();
+
+      (dados.itens || []).forEach((item, indice) => {
+        const desc = String(item.descricao == null ? "" : item.descricao);
+        const linhasDesc = pdfQuebrarLinha(desc, tamDesc, false, colDesc - 12);
+        const altura = Math.max(alturaLinha, 6 + linhasDesc.length * tamLinha);
+
+        // Uma linha alta que não caiba inteira é empurrada para a página
+        // seguinte, para não ficar cortada a meio.
+        if (y - altura < PDF_MARGEM + 40) {
+          doc.novaPagina();
+          sincronizar();
+          cabecalhoTabela();
+        }
+
+        if (indice % 2 === 1) {
+          doc.retangulo(esq, y - altura, PDF_LARG_UTIL, altura, "0.98 0.98 0.98", null);
+        }
+        let yLinha = y - 12;
+        if (mostrarSetor) {
+          doc.texto(esq + 6, yLinha, pdfPrimeiraLinha(item.setor, colSetor - 10, 9, true), 8.5, false, preto);
+        }
+        linhasDesc.forEach((linhaTexto, i) => {
+          if (i === 0) {
+            doc.textoDireita(xUnit + colUnit - 6, yLinha, "R$ " + formatarMoeda(item.unitario), 9, false, preto);
+            doc.textoDireita(xTotal + colTotal - 6, yLinha, "R$ " + formatarMoeda(item.total), 9, true, preto);
+            doc.textoCentro(xQtd + colQtd / 2, yLinha, formatarQtd(item.qtd), 9, false, preto);
+          }
+          doc.texto(xDesc + 6, yLinha, linhaTexto, tamDesc, false, preto);
+          yLinha -= tamLinha;
+        });
+        y -= altura;
+        doc.linha(esq, y, dir, y, laranja);
+      });
+
+      // ---------- Total ----------
+      y -= 14;
+      const alturaTotal = 26;
+      if (y - alturaTotal < PDF_MARGEM + 30) {
+        doc.novaPagina();
+        sincronizar();
+      }
+      doc.retangulo(esq, y - alturaTotal, PDF_LARG_UTIL, alturaTotal, amareloTotal, laranjaEscuro);
+      doc.texto(esq + 12, y - 17, "VALOR TOTAL DO ORÇAMENTO:", 10, true, preto);
+      doc.textoDireita(dir - 12, y - 18, "R$ " + formatarMoeda(dados.total), 13, true, preto);
+      y -= alturaTotal + 26;
+
+      // ---------- Termos e condições ----------
+      const termos = dados.termos || [];
+      if (termos.length) {
+        if (y - 20 < PDF_MARGEM + 30) {
+          doc.novaPagina();
+          sincronizar();
+        }
+        doc.texto(esq, y - 9, "Termos e Condições", 9.5, true, preto);
+        y -= 18;
+        termos.forEach((termo, i) => {
+          const linhas = pdfQuebrarLinha(`${i + 1}. ${termo}`, 8, false, PDF_LARG_UTIL);
+          linhas.forEach(l => {
+            if (y - 11 < PDF_MARGEM + 30) {
+              doc.novaPagina();
+              sincronizar();
+            }
+            doc.texto(esq, y - 9, l, 8, false, cor("#111111"));
+            y -= 10.5;
+          });
+          y -= 1.5;
+        });
+        y -= 6;
+      }
+
+      // ---------- Assinaturas: nunca partida entre duas páginas ----------
+      const alturaAssinaturas = 52;
+      if (y - alturaAssinaturas < PDF_MARGEM + 20) {
+        doc.novaPagina();
+        sincronizar();
+      }
+      y -= 18;
+      const colAss = PDF_LARG_UTIL / 2;
+      [nomeEmpresa, "Ciente / Cliente: " + dados.cliente.nome].forEach((legenda, i) => {
+        const x = esq + i * colAss + 12;
+        const larguraLinha = colAss - 24;
+        doc.linha(x, y, x + larguraLinha, y, preto);
+        doc.texto(x, y - 11, legenda, 8.5, true, preto);
+      });
+
+      return doc.finalizar({
+        titulo: dados.titulo,
+        data: pdfDataISO(),
+        rodape: `${nomeEmpresa} - ${dados.empresa.telefone || "Orçamento"}`
+      });
+    }
+
+    // Primeira linha de um texto, cortada para caber numa coluna.
+    function pdfPrimeiraLinha(texto, maxLargura, tamanho, negrito) {
+      const linhas = pdfQuebrarLinha(texto, tamanho, negrito, maxLargura);
+      return linhas[0] || "";
+    }
+
+    function imprimirOuVisualizarOrcamento(setorKey, apenasVisualizar = false) {
+      let itens = [];
+      let nome = "";
+      let endereco = "";
+      let telefone = "";
+      const ativo = clienteAtivo();
+
+      if (setorKey === "Unificado") {
+        ["Eletrica", "Seguranca", "Solar"].forEach(k => {
+          (AppState.orcamentos[k] || []).forEach(it => itens.push({ ...it, setor: k }));
+        });
+        nome = ativoNomeOuSelecionado("unificado");
+        endereco = document.getElementById("unificado-cli-end")?.value.trim() || ativo.endereco;
+        telefone = document.getElementById("unificado-cli-tel")?.value.trim() || ativo.telefone;
+      } else {
+        const setorObj = CONFIG_SETORES.find(s => s.key === setorKey);
+        itens = AppState.orcamentos[setorKey] || [];
+        if (setorObj) {
+          nome = ativoNomeOuSelecionado(setorObj.id);
+          endereco = document.getElementById(`${setorObj.id}-cli-end`)?.value.trim() || ativo.endereco;
+          telefone = document.getElementById(`${setorObj.id}-cli-tel`)?.value.trim() || ativo.telefone;
+        }
+      }
+
+      if (!itens.length) {
+        showToast("Sem itens para gerar o orçamento.", "warning");
+        return;
+      }
+
+      if (!nome) nome = "Cliente Diversos";
+      if (!endereco) endereco = "Não informado";
+      if (!telefone) telefone = "Não informado";
+
+      const total = totalItens(itens);
+      const dataHoraAtual = new Date().toLocaleString('pt-BR');
+
+      // Usa o nome do sector (com acentos) e nao a chave interna sem acentos
+      const nomeSetor = CONFIG_SETORES.find(s => s.key === setorKey)?.nome || setorKey;
+      const tituloSetor = setorKey === "Unificado" 
+        ? "ORÇAMENTO GERAL CONSOLIDADO" 
+        : `ORÇAMENTO DE SERVIÇOS - ${nomeSetor.toUpperCase()}`;
+
+      const corTema = setorKey === "Unificado" ? "#D84315" : (
+        setorKey === "Eletrica" ? "#F57C00" : (setorKey === "Seguranca" ? "#D84315" : "#FF8F00")
+      );
+
+      // Monta estrutura idêntica aos elementos do ReportLab no script python
+      let linhasItens = "";
+      if (setorKey === "Unificado") {
+        linhasItens = itens.map(i => `
+          <tr style="border-bottom: 1px solid #FFB300;">
+            <td style="padding: 6px; font-weight: bold;">${NOMES_SETOR[i.setor] || i.setor}</td>
+            <td style="padding: 6px;">${escapeHtml(i.descricao)}</td>
+            <td style="padding: 6px; text-align: center;">${escapeHtml(formatarQtd(i.qtd))}</td>
+            <td style="padding: 6px; text-align: right;">R$ ${formatarMoeda(i.unitario)}</td>
+            <td style="padding: 6px; text-align: right; font-weight: bold;">R$ ${formatarMoeda(i.total)}</td>
+          </tr>
+        `).join("");
+      } else {
+        linhasItens = itens.map(i => `
+          <tr style="border-bottom: 1px solid #FFB300;">
+            <td style="padding: 6px;">${escapeHtml(i.descricao)}</td>
+            <td style="padding: 6px; text-align: center;">${escapeHtml(formatarQtd(i.qtd))}</td>
+            <td style="padding: 6px; text-align: right;">R$ ${formatarMoeda(i.unitario)}</td>
+            <td style="padding: 6px; text-align: right; font-weight: bold;">R$ ${formatarMoeda(i.total)}</td>
+          </tr>
+        `).join("");
+      }
+
+      const htmlDocumento = `
+        <div style="font-family: Helvetica, Arial, sans-serif; color: #000000; padding: 10px;">
+          <!-- Cabeçalho Empresa -->
+          <div style="text-align: center; margin-bottom: 10px;">
+            <h1 style="color: ${corTema}; font-size: 20px; font-weight: bold; margin: 0; text-transform: uppercase;">
+              ${escapeHtml(AppState.empresa.nome) || "Orçamento"}
+            </h1>
+            ${[AppState.empresa.telefone ? "Telefone: " + escapeHtml(AppState.empresa.telefone) : "",
+               AppState.empresa.email ? "E-mail: " + escapeHtml(AppState.empresa.email) : ""].filter(Boolean).length
+              ? `<p style="font-size: 11px; color: #333333; margin: 4px 0 0 0;">
+                   ${[AppState.empresa.telefone ? "Telefone: " + escapeHtml(AppState.empresa.telefone) : "",
+                      AppState.empresa.email ? "E-mail: " + escapeHtml(AppState.empresa.email) : ""].filter(Boolean).join(" | ")}
+                 </p>` : ""}
+          </div>
+
+          <h2 style="text-align: center; font-size: 14px; font-weight: bold; margin: 15px 0 10px 0; color: #000;">
+            ${tituloSetor}
+          </h2>
+
+          <!-- Tabela de Dados do Cliente -->
+          <div style="background-color: #FFF8E1; border: 1px solid #FFB300; border-radius: 4px; padding: 8px 12px; margin-bottom: 15px;">
+            <table style="width: 100%; font-size: 11px; line-height: 1.6;">
+              <tr>
+                <td style="width: 50%;"><b>Cliente:</b> ${escapeHtml(nome)}</td>
+                <td style="width: 50%;"><b>Data/Hora:</b> ${dataHoraAtual}</td>
+              </tr>
+              <tr>
+                <td><b>Morada:</b> ${escapeHtml(endereco)}</td>
+                <td><b>Validade:</b> 15 dias</td>
+              </tr>
+              <tr>
+                <td><b>Telefone:</b> ${escapeHtml(telefone)}</td>
+                <td><b>Condição:</b> A combinar</td>
+              </tr>
+            </table>
+          </div>
+
+          <p style="font-size: 12px; font-weight: bold; margin: 10px 0 5px 0;">Discriminação dos Serviços</p>
+
+          <!-- Tabela dos Itens -->
+          <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 10px;">
+            <thead>
+              <tr style="background-color: ${corTema}; color: #000000; font-weight: bold;">
+                ${setorKey === 'Unificado' ? '<th style="padding: 6px; text-align: left;">Setor</th>' : ''}
+                <th style="padding: 6px; text-align: left;">Descrição do Serviço</th>
+                <th style="padding: 6px; text-align: center; width: 45px;">Qtd</th>
+                <th style="padding: 6px; text-align: right; width: 90px;">Val. Unit.</th>
+                <th style="padding: 6px; text-align: right; width: 100px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${linhasItens}
+            </tbody>
+          </table>
+
+          <!-- Totalizador -->
+          <div style="background-color: #FFECB3; border: 1px solid #FF9800; padding: 8px 12px; text-align: right; font-size: 12px; font-weight: bold; margin-bottom: 20px;">
+            VALOR TOTAL DO ORÇAMENTO: <span style="font-size: 14px; margin-left: 10px;">R$ ${formatarMoeda(total)}</span>
+          </div>
+
+          <!-- Termos e Assinaturas (Keep Together) -->
+          <div style="margin-top: 15px; page-break-inside: avoid;">
+            <p style="font-size: 11px; font-weight: bold; margin-bottom: 4px;">Termos e Condições:</p>
+            <div style="font-size: 10px; color: #111; line-height: 1.5; margin-bottom: 40px;">
+              1. Este orçamento tem validade de 15 dias a contar da data de emissão.<br/>
+              2. O início dos serviços está condicionado à aprovação deste orçamento e confirmação de agenda.<br/>
+              3. Materiais adicionais não previstos nesta proposta serão cobrados à parte mediante aprovação prévia.<br/>
+              4. Garantia de 90 dias sobre os serviços executados de mão de obra.
+            </div>
+
+            <table style="width: 100%; text-align: center; font-size: 11px; margin-top: 30px;">
+              <tr>
+                <td style="width: 50%; padding: 0 20px;">
+                  ___________________________________________________<br/>
+                  <b>${escapeHtml(AppState.empresa.nome)}</b>
+                </td>
+                <td style="width: 50%; padding: 0 20px;">
+                  ___________________________________________________<br/>
+                  <b>Ciente / Cliente: ${escapeHtml(nome)}</b>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      `;
+
+      if (apenasVisualizar) {
+        // Pré-visualização numa janela nova.
+        const w = window.open("", "_blank");
+        if (!w) {
+          mostrarAviso(
+            "O navegador bloqueou a janela de visualização do orçamento. " +
+            "Permita os pop-ups deste site nas definições e carregue outra vez em 'Vis. PDF'."
+          );
+          showToast("Janela de visualização bloqueada pelo navegador.", "warning");
+          return;
+        }
+        w.opener = null;
+        w.document.write(`
+          <html>
+            <head>
+              <title>Visualização do Orçamento - ${escapeHtml(nome)}</title>
+              <style>
+                body { margin: 20px auto; max-width: 800px; background: #525659; }
+                .sheet { background: #fff; padding: 30px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+              </style>
+            </head>
+            <body>
+              <div class="sheet">${htmlDocumento}</div>
+            </body>
+          </html>
+        `);
+        w.document.close();
+        return;
+      }
+
+      // Descarrega o PDF. É gerado aqui mesmo, sem abrir a caixa de impressão
+      // do navegador e sem depender de nenhuma biblioteca externa.
+      try {
+        const bytes = construirPdfOrcamento({
+          empresa: {
+            nome: AppState.empresa.nome,
+            telefone: AppState.empresa.telefone,
+            email: AppState.empresa.email
+          },
+          titulo: tituloSetor,
+          corTema: corTema,
+          cliente: { nome, endereco, telefone },
+          dataHora: dataHoraAtual,
+          validade: "15 dias",
+          condicao: "A combinar",
+          mostrarSetor: setorKey === "Unificado",
+          itens: itens.map(i => ({
+            setor: setorKey === "Unificado" ? (NOMES_SETOR[i.setor] || i.setor) : "",
+            descricao: i.descricao,
+            qtd: i.qtd,
+            unitario: i.unitario,
+            total: i.total
+          })),
+          total: total,
+          termos: [
+            "Este orçamento tem validade de 15 dias a contar da data de emissão.",
+            "O início dos serviços está condicionado à aprovação deste orçamento e confirmação de agenda.",
+            "Materiais adicionais não previstos nesta proposta serão cobrados à parte mediante aprovação prévia.",
+            "Garantia de 90 dias sobre os serviços executados de mão de obra."
+          ]
+        });
+
+        const blob = new Blob([bytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `Orcamento_${(nome || "cliente").replace(/[\\/:*?"<>|]+/g, "_").slice(0, 40)}_${carimboDataHora()}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+        showToast("PDF descarregado.", "success");
+      } catch (e) {
+        console.error("Falha ao gerar o PDF:", e);
+        showToast("Não foi possível gerar o PDF. Use 'Vis. PDF' para imprimir.", "error");
+      }
+    }
+
+    function escapeHtml(str) {
+      // Só null/undefined viram string vazia. O teste antigo "!str" também
+      // apagava o 0 e o false, que são valores válidos num registo.
+      if (str === null || str === undefined) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    async function iniciarAplicacao() {
+      carregarEstadoGeral();
+      carregarDadosEmpresaUI();
+      montarAbasServicosDOM();
+
+      // Sinais de scroll da barra de abas (mantem-se correctos ao rodar,
+      // redimensionar ou quando a fonte Inter acaba de carregar)
+      document.querySelectorAll(".nav-abas").forEach(nav => {
+        nav.addEventListener("scroll", atualizarSinalAbas, { passive: true });
+      });
+      window.addEventListener("resize", atualizarSinalAbas);
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(atualizarSinalAbas);
+      }
+
+      ligarAutoSalvo();
+
+      // Move anexos antigos em base64 para o IndexedDB antes de qualquer render.
+      try {
+        await migrarAnexosLegados();
+      } catch (e) {
+        console.error("Falha na migração de anexos legados:", e);
+      }
+
+      // Apaga anexos que ficaram sem nenhum cliente associado (por exemplo os
+      // do estado de demonstração removido), para o armazenamento ficar limpo.
+      try {
+        await limparAnexosOrfaos();
+      } catch (e) {
+        console.warn("Falha na limpeza de anexos órfãos:", e);
+      }
+
+      renderizarTabelaClientes();
+      renderizarTabelaAgenda();
+      renderizarTabelaFinanceiro();
+      restaurarClienteAtivoNaUI();
+      atualizarMedidorArmazenamento();
+
+      // Avisa logo de arranque se a base de anexos estiver indisponível
+      // (navegador privado, cookies bloqueados, file:// restrito, etc.).
+      if (window.indexedDB) {
+        contarBlobsAnexo()
+          .catch(e => {
+            console.error("Base de anexos indisponível:", e);
+            mostrarAviso(
+              "A base de dados local de anexos está indisponível neste navegador. Os anexos (fotos/documentos) não podem ser gravados. " +
+              "O resto da aplicação continua a funcionar normalmente."
+            );
+          });
+      } else {
+        mostrarAviso(
+          "Este navegador não suporta IndexedDB, por isso os anexos de mídia não podem ser guardados. " +
+          "Considere usar o Google Chrome ou o Microsoft Edge."
+        );
+      }
+
+      // Preenche data inicial da agenda no formato DD-MM-AAAA
+      const hoje = new Date();
+      const dd = String(hoje.getDate()).padStart(2, '0');
+      const mm = String(hoje.getMonth() + 1).padStart(2, '0');
+      const aaaa = hoje.getFullYear();
+      const inputAgendaData = document.getElementById("agenda-data");
+      if (inputAgendaData) inputAgendaData.value = `${dd}-${mm}-${aaaa}`;
+
+      // Inicia na aba Empresa
+      trocarAba('empresa');
+
+      // Resumo da última restauração, mostrado depois do recarga.
+      try {
+        const marca = sessionStorage.getItem(MARCA_BACKUP_RESTAURO);
+        if (marca) {
+          sessionStorage.removeItem(MARCA_BACKUP_RESTAURO);
+          const r = JSON.parse(marca);
+          if (r.falhas > 0) {
+            mostrarAviso(
+              `Cópia restaurada com ${r.falhas} anexo(s) por restaurar. ` +
+              `Os clientes, a agenda, o financeiro e os orçamentos estão intactos.`
+            );
+            showToast(`Cópia restaurada, mas ${r.falhas} anexo(s) falharam.`, "warning");
+          } else {
+            showToast(`Cópia restaurada: ${r.clientes} cliente(s) e ${r.anexos} anexo(s).`, "success");
+          }
+        }
+      } catch (e) {
+        console.warn("Não foi possível ler o resumo da restauração:", e);
+      }
+    }
+
+    /* A aplicação arrancava em window.onload, que espera por TODOS os
+       recursos externos (Tailwind, Font Awesome e Google Fonts). Com rede
+       móvel fraca a app ficava inerte durante dezenas de segundos. O DOM já
+       está pronto quando este script corre no fim do <body>, por isso
+       arrancamos aqui e voltamos a atualizar os sinais das abas quando as
+       fontes terminarem de carregar. */
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", iniciarAplicacao, { once: true });
+    } else {
+      iniciarAplicacao();
+    }
+  </script>
+</body>
+</html>
